@@ -51,7 +51,7 @@ class HaroldWhisperer(object):
 
         body_producer = FormEncodedBodyProducer(data)
         headers = Headers({
-            "User-Agent": ["deploy tool"],
+            "User-Agent": ["rollingpin"],
             "Content-Type": ["application/x-www-form-urlencoded"],
         })
         return self.agent.request("POST", url, headers, body_producer)
