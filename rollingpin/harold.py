@@ -39,7 +39,7 @@ class HaroldWhisperer(object):
 
     def make_request(self, path, data):
         base_url = urlparse.urlparse(self.base_url)
-        path = posixpath.join("/harold", path, self.secret)
+        path = posixpath.join(base_url.path, "harold", path, self.secret)
         url = urlparse.urlunparse((
             base_url.scheme,
             base_url.netloc,
