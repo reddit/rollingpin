@@ -35,7 +35,7 @@ CONFIG_SPEC = {
 
     "harold": {
         "base-url": Option(str, default=None),
-        "secret": Option(str, default=None),
+        "hmac-secret": Option(str, default=None),
     },
 
     "hostsource": {

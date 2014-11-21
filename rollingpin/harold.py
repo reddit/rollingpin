@@ -1,5 +1,7 @@
 import contextlib
 import getpass
+import hashlib
+import hmac
 import logging
 import posixpath
 import urllib
@@ -28,18 +30,21 @@ class FormEncodedBodyProducer(object):
     def stopProducing(self):
         pass
 
+    def hash(self, secret):
+        return hmac.new(secret, self.body, hashlib.sha1).hexdigest()
+
 
 class HaroldWhisperer(object):
     def __init__(self, config):
         self.base_url = config["harold"]["base-url"]
-        self.secret = config["harold"]["secret"]
+        self.secret = config["harold"]["hmac-secret"]
 
         self.connection_pool = HTTPConnectionPool(reactor)
         self.agent = Agent(reactor, pool=self.connection_pool)
 
     def make_request(self, path, data):
         base_url = urlparse.urlparse(self.base_url)
-        path = posixpath.join(base_url.path, "harold", path, self.secret)
+        path = posixpath.join(base_url.path, "harold", path)
         url = urlparse.urlunparse((
             base_url.scheme,
             base_url.netloc,
@@ -53,6 +58,7 @@ class HaroldWhisperer(object):
         headers = Headers({
             "User-Agent": ["rollingpin"],
             "Content-Type": ["application/x-www-form-urlencoded"],
+            "X-Hub-Signature": ["sha1=" + body_producer.hash(self.secret)],
         })
         return self.agent.request("POST", url, headers, body_producer)
 
