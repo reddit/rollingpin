@@ -100,7 +100,10 @@ class Deployer(object):
 
     @inlineCallbacks
     def run_deploy(self, hosts, components, commands):
-        self.transport.initialize()
+        try:
+            self.transport.initialize()
+        except TransportError as e:
+            raise DeployError("could not initialize transport: %s" % e)
 
         def signal_handler(sig, _):
             reason = SIGNAL_MESSAGES[sig]

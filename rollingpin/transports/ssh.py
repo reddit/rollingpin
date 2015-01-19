@@ -24,6 +24,7 @@ from ..config import Option
 from ..transports import (
     Transport,
     TransportConnection,
+    TransportError,
     CommandFailed,
     ConnectionError,
 )
@@ -99,6 +100,11 @@ class _ConnectionFactory(ClientFactory):
         self.connection_ready.errback(reason)
 
 
+class BadKeyPassphraseError(TransportError):
+    def __init__(self):
+        TransportError.__init__(self, "bad passphrase for ssh key")
+
+
 def _load_key(filename):
     try:
         return Key.fromFile(filename)
@@ -112,6 +118,8 @@ def _load_key(filename):
                 return Key.fromFile(filename, passphrase=passphrase)
             except BadKeyError:
                 pass
+
+        raise BadKeyPassphraseError()
 
 
 class SshTransport(Transport):
