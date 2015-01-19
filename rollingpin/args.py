@@ -114,6 +114,14 @@ def _add_flags(config, parser):
             dest="notify_harold",
         )
 
+    options_group.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        default=False,
+        help="spew verbose logging of command output to the console",
+        dest="verbose_logging",
+    )
+
 
 def _add_deploy_arguments(config, parser):
     deploy_group = parser.add_argument_group(
@@ -190,6 +198,9 @@ def construct_canonical_commandline(config, args):
 
     if config["harold"]["base-url"] and not args.notify_harold:
         arg_list.append("--no-harold")
+
+    if args.verbose_logging:
+        arg_list.append("--verbose")
 
     if args.components:
         arg_list.append("-d")

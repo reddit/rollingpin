@@ -26,9 +26,12 @@ def log_to_file(config, word):
     log_path = os.path.join(config["deploy"]["log-directory"], log_name)
     handler = logging.FileHandler(log_path, mode="w")
     handler.setFormatter(formatter)
+    handler.setLevel(logging.DEBUG)
 
     root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
+    # the default level for the root logger is WARNING, changing it to
+    # NOTSET allows handlers to choose for themselves their verbosity
+    root.setLevel(logging.NOTSET)
     root.addHandler(handler)
 
     return log_path

@@ -145,9 +145,9 @@ def _main(reactor, *raw_args):
             args.original, log_path)
 
     if os.isatty(sys.stdout.fileno()):
-        HeadfulFrontend(event_bus, hosts, args.pause_after)
+        HeadfulFrontend(event_bus, hosts, args.verbose_logging, args.pause_after)
     else:
-        HeadlessFrontend(event_bus, hosts)
+        HeadlessFrontend(event_bus, hosts, args.verbose_logging)
 
     # execute
     if args.list_hosts:

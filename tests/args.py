@@ -93,6 +93,19 @@ class TestArgumentParsing(unittest.TestCase):
         args = self.parser.parse_args(["-h", "a", "--no-harold"])
         self.assertFalse(args.notify_harold)
 
+    # -v / --verbose
+    def test_verbose_default(self):
+        args = self.parser.parse_args(["-h", "a"])
+        self.assertFalse(args.verbose_logging)
+
+    def test_verbose_flagged_short(self):
+        args = self.parser.parse_args(["-h", "a", "-v"])
+        self.assertTrue(args.verbose_logging)
+
+    def test_verbose_flagged_long(self):
+        args = self.parser.parse_args(["-h", "a", "--verbose"])
+        self.assertTrue(args.verbose_logging)
+
     # -d
     def test_empty_deploys(self):
         args = self.parser.parse_args(["-h", "a"])
@@ -237,3 +250,8 @@ class TestArgumentReconstruction(unittest.TestCase):
         args = self.parser.parse_args(["-h", "host", "-c", "cmd1", "-c", "cmd2"])
         canonical = construct_canonical_commandline(self.config, args)
         self.assertEqual("-h host --parallel=5 -c cmd1 -c cmd2", canonical)
+
+    def test_verbose(self):
+        args = self.parser.parse_args(["-h", "host", "-v"])
+        canonical = construct_canonical_commandline(self.config, args)
+        self.assertEqual("-h host --parallel=5 --verbose", canonical)

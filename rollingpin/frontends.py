@@ -61,15 +61,18 @@ class HostFormatter(logging.Formatter):
 
 
 class HeadlessFrontend(object):
-    def __init__(self, event_bus, hosts):
+    def __init__(self, event_bus, hosts, verbose_logging):
         longest_hostname = max(len(host) for host in hosts)
 
         formatter = HostFormatter(longest_hostname)
         handler = logging.StreamHandler()
         handler.setFormatter(formatter)
+        if verbose_logging:
+            handler.setLevel(logging.DEBUG)
+        else:
+            handler.setLevel(logging.INFO)
 
         root = logging.getLogger()
-        root.setLevel(logging.DEBUG)
         root.addHandler(handler)
 
         self.host_results = dict.fromkeys(hosts, None)
@@ -166,8 +169,8 @@ class StdioListener(Protocol):
 
 
 class HeadfulFrontend(HeadlessFrontend):
-    def __init__(self, event_bus, hosts, pause_after):
-        HeadlessFrontend.__init__(self, event_bus, hosts)
+    def __init__(self, event_bus, hosts, verbose_logging, pause_after):
+        HeadlessFrontend.__init__(self, event_bus, hosts, verbose_logging)
 
         self.console_input = StdioListener()
         StandardIO(self.console_input)
