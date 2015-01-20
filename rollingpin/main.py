@@ -24,6 +24,7 @@ from .hostlist import (
     restrict_hostlist,
 )
 from .hostsources import HostSourceError
+from .graphite import enable_graphite_notifications
 from .log import log_to_file
 from .providers import get_provider, UnknownProviderError
 from .utils import random_word
@@ -41,6 +42,10 @@ CONFIG_SPEC = {
     "harold": OptionalSection({
         "base-url": Option(str, default=None),
         "hmac-secret": Option(str, default=None),
+    }),
+
+    "graphite": OptionalSection({
+        "endpoint": Option(str, default=None),
     }),
 
     "hostsource": {
@@ -148,6 +153,9 @@ def _main(reactor, *raw_args):
         enable_harold_notifications(
             word, config, event_bus, hosts,
             args.original, log_path)
+
+    if config["graphite"]["endpoint"]:
+        enable_graphite_notifications(config, event_bus, args.components)
 
     if os.isatty(sys.stdout.fileno()):
         HeadfulFrontend(event_bus, hosts, args.verbose_logging, args.pause_after)

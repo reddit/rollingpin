@@ -29,6 +29,9 @@ The rollout will then begin:
 * after a number of hosts have completed their work, the rollout can pause to
   allow [sanity checking][1] before continuing on (`--pauseafter`)
 
+If configured, graphite will be sent a metric of the form
+`events.deploy.{component}` for each component deployed.
+
 The rolling pin also features integration with [Harold][2].
 
 See [example.ini](example.ini) for configuration instructions.
