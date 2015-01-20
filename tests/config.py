@@ -87,3 +87,35 @@ class TestConfiguration(unittest.TestCase):
         errors = info.exception.errors
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0], rollingpin.config.CoercionError)
+
+
+class TestOptionalSections(unittest.TestCase):
+    def test_bad_optional_section(self):
+        parser = ConfigParser.ConfigParser()
+        with self.assertRaises(rollingpin.config.NoDefaultInOptionalSection):
+            rollingpin.config.coerce_and_validate_config(parser, {
+                "optional-section": rollingpin.config.OptionalSection({
+                    "key": rollingpin.config.Option(int),
+                })
+            })
+
+    def test_optional_section_missing(self):
+        parser = ConfigParser.ConfigParser()
+        config = rollingpin.config.coerce_and_validate_config(parser, {
+            "optional-section": rollingpin.config.OptionalSection({
+                "key": rollingpin.config.Option(int, default=3),
+            })
+        })
+        self.assertEqual(config["optional-section"]["key"], 3)
+
+    def test_optional_section_present(self):
+        parser = make_configparser("""
+        [optional-section]
+        key = value
+        """)
+        config = rollingpin.config.coerce_and_validate_config(parser, {
+            "optional-section": rollingpin.config.OptionalSection({
+                "key": rollingpin.config.Option(str, default=None),
+            })
+        })
+        self.assertEqual(config["optional-section"]["key"], "value")
