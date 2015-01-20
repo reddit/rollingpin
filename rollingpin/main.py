@@ -6,7 +6,12 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import react
 
 from .args import make_arg_parser, construct_canonical_commandline
-from .config import coerce_and_validate_config, ConfigurationError, Option
+from .config import (
+    coerce_and_validate_config,
+    ConfigurationError,
+    Option,
+    OptionalSection,
+)
 from .deploy import Deployer, DeployError
 from .eventbus import EventBus
 from .frontends import HeadlessFrontend, HeadfulFrontend
@@ -33,10 +38,10 @@ CONFIG_SPEC = {
         "default-parallel": Option(int),
     },
 
-    "harold": {
+    "harold": OptionalSection({
         "base-url": Option(str, default=None),
         "hmac-secret": Option(str, default=None),
-    },
+    }),
 
     "hostsource": {
         "provider": Option(str),

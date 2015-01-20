@@ -11,10 +11,21 @@ class Option(object):
         self.default = default
 
 
+class OptionalSection(dict):
+    def __init__(self, options):
+        dict.__init__(self, options)
+
+
 class ConfigurationError(Exception):
     def __init__(self, errors):
         self.errors = errors
         super(ConfigurationError, self).__init__()
+
+
+class NoDefaultInOptionalSection(Exception):
+    def __init__(self):
+        Exception.__init__(
+            self, "all options in an optional section must have defaults")
 
 
 class MissingSectionError(object):
@@ -50,14 +61,18 @@ def coerce_and_validate_config(parser, spec):
     errors = []
 
     for section_name, section_spec in spec.iteritems():
-        if not parser.has_section(section_name):
+        section_optional = isinstance(section_spec, OptionalSection)
+        if not (section_optional or parser.has_section(section_name)):
             errors.append(MissingSectionError(section_name))
             continue
 
         for key, option in section_spec.iteritems():
+            if section_optional and option.default is NO_DEFAULT:
+                raise NoDefaultInOptionalSection
+
             try:
                 value = parser.get(section_name, key)
-            except ConfigParser.NoOptionError:
+            except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
                 if option.default is not NO_DEFAULT:
                     config[section_name][key] = option.default
                 else:
