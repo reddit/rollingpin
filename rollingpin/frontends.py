@@ -65,15 +65,21 @@ class HeadlessFrontend(object):
         longest_hostname = max(len(host) for host in hosts)
 
         formatter = HostFormatter(longest_hostname)
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
+        self.log_handler = logging.StreamHandler()
+        self.log_handler.setFormatter(formatter)
         if verbose_logging:
-            handler.setLevel(logging.DEBUG)
+            self.enable_verbose_logging()
         else:
-            handler.setLevel(logging.INFO)
+            self.disable_verbose_logging()
+
+            # temporarily boost logging during the build phase
+            event_bus.register({
+                "build.begin": self.enable_verbose_logging,
+                "build.end": self.disable_verbose_logging,
+            })
 
         root = logging.getLogger()
-        root.addHandler(handler)
+        root.addHandler(self.log_handler)
 
         self.host_results = dict.fromkeys(hosts, None)
         self.start_time = None
@@ -85,6 +91,12 @@ class HeadlessFrontend(object):
             "host.end": self.on_host_end,
             "host.abort": self.on_host_abort,
         })
+
+    def enable_verbose_logging(self):
+        self.log_handler.setLevel(logging.DEBUG)
+
+    def disable_verbose_logging(self):
+        self.log_handler.setLevel(logging.INFO)
 
     def on_deploy_begin(self):
         self.start_time = time.time()

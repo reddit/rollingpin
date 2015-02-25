@@ -29,6 +29,7 @@ class MockTransportConnection(TransportConnection):
         result = {}
 
         if command == "build":
+            log.debug("MOCK: build stuff")
             for arg in args:
                 result[arg] = "build-token"
         elif command == "deploy":

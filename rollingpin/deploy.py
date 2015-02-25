@@ -115,6 +115,8 @@ class Deployer(object):
 
         try:
             if components:
+                yield self.event_bus.trigger("build.begin")
+
                 try:
                     build_command = ["build"] + components
                     (tokens,) = yield self.process_host(
@@ -131,6 +133,8 @@ class Deployer(object):
                 except Exception:
                     traceback.print_exc()
                     raise DeployError("unexpected error in build")
+
+                yield self.event_bus.trigger("build.end")
 
             parallelism_limiter = DeferredSemaphore(tokens=self.parallel)
             host_deploys = []
