@@ -1,3 +1,4 @@
+import collections
 import logging
 import signal
 import traceback
@@ -54,7 +55,7 @@ class Deployer(object):
         self.transport = config["transport"]
         self.event_bus = event_bus
         self.parallel = parallel
-        self.build_host = config["deploy"]["build-host"]
+        self.code_host = config["deploy"]["code-host"]
         self.sleeptime = sleeptime
 
     @inlineCallbacks
@@ -118,21 +119,50 @@ class Deployer(object):
                 yield self.event_bus.trigger("build.begin")
 
                 try:
-                    build_command = ["build"] + components
-                    (tokens,) = yield self.process_host(
-                        self.build_host, [build_command])
+                    # synchronize the code host with upstreams
+                    # this will return a build token and build host for each
+                    # component
+                    sync_command = ["synchronize"] + components
+                    (sync,) = yield self.process_host(
+                        self.code_host, [sync_command])
 
+                    # this is where we build up the final deploy command
+                    # resulting from all our syncing and building
                     deploy_command = ["deploy"]
-                    for component in components:
-                        try:
-                            deploy_ref = component + "@" + tokens[component]
-                        except KeyError:
-                            raise ComponentNotBuiltError(component)
-                        deploy_command.append(deploy_ref)
-                    commands = [deploy_command] + commands
+
+                    # collect the results of the sync per-buildhost
+                    by_buildhost = collections.defaultdict(list)
+                    for component, sync_info in sync.iteritems():
+                        component_ref = component + "@" + sync_info["token"]
+
+                        build_host = sync_info.get("buildhost", None)
+                        if build_host:
+                            by_buildhost[build_host].append(component_ref)
+                        else:
+                            # no build host means we just pass the build token
+                            # straight through as a deploy token
+                            deploy_command.append(component_ref)
+
+                    # ask each build host to build our components and return
+                    # a deploy token
+                    for build_host, build_refs in by_buildhost.iteritems():
+                        build_command = ["build"] + build_refs
+                        (tokens,) = yield self.process_host(
+                            build_host, [build_command])
+
+                        for ref in build_refs:
+                            try:
+                                deploy_ref = component + "@" + tokens[ref]
+                            except KeyError:
+                                raise ComponentNotBuiltError(component)
+                            deploy_command.append(deploy_ref)
                 except Exception:
                     traceback.print_exc()
-                    raise DeployError("unexpected error in build")
+                    raise DeployError("unexpected error in sync/build")
+                else:
+                    # inject our built-up deploy command at the beginning of
+                    # the command list for each host
+                    commands = [deploy_command] + commands
 
                 yield self.event_bus.trigger("build.end")
 

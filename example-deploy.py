@@ -20,21 +20,60 @@ def run_and_capture(*argv):
     return subprocess.check_output(argv)
 
 
-def build(*components):
-    """Build a component in preparation for deploy.
+def synchronize(*components):
+    """Synchronize the code repistories with upstreams.
 
-    This will be called once on the build host with a list of all components to
-    build.  The script should prepare the components for deploy in whatever way
-    is necessary (build a .deb package, fetch down from an SCM system, etc.)
-    and return a mapping of components to tokens that identify the relevant
-    build artifacts.
+    This is called once on the code host with a list of all components to
+    synchronize. The script should fetch from upstream remotes, sync with a SCM
+    server, or whatever your system does. The command should return a mapping
+    of each component to an object containing a unique identifier for this
+    version of the code and optionally the hostname of a buildhost.
+
+    If a buildhost is provided for a component, rollingpin will run the build
+    command on the build host with a list of all components destined for it.
+
+    If no buildhost is provided, the token returned by synchronize will be
+    passed straight through to the deploy command on each host.
 
     This command is required if you want to run "-d" commands in rollingpin.
 
     """
 
-    # TODO: put your build logic in here!
-    return {component: "EXAMPLE" for component in components}
+    return {
+        # a component that needs to be built
+        "buildable": {
+            "token": "7be0db612ea365e1d9410763198bb79a9e28dfd6",
+            "buildhost": "build-01",
+        },
+        # a component that just gets deployed without build
+        "simple": {
+            "token": "d8b97272f2f71658be46d5320761ed487a913529",
+            "buildhost": None,
+        },
+    }
+
+
+
+def build(*components_with_tokens):
+    """Build a component in preparation for deploy.
+
+    This will be called once on each build host with a list of all components
+    to build.  The script should prepare the components for deploy in whatever
+    way is necessary (build a .deb package, fetch down from an SCM system,
+    etc.) and return a mapping of components to tokens that identify the
+    relevant build artifacts.
+
+    This command is required if you want to run "-d" commands in rollingpin.
+
+    """
+
+    res = {}
+    for component_with_token in components_with_tokens:
+        component, sep, build_token = component_with_token.partition("@")
+        assert sep == "@"
+        # TODO: put your build logic in here!
+        res[component] = "example"
+    return res
 
 
 def deploy(*components_with_tokens):
@@ -127,6 +166,7 @@ def main(commands):
 
 if __name__ == "__main__":
     main({
+        "synchronize": synchronize,
         "build": build,
         "deploy": deploy,
         "restart": restart,
