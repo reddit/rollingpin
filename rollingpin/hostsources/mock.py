@@ -2,18 +2,22 @@ import random
 
 from twisted.internet.defer import succeed
 
+from ..config import Option
 from ..hostsources import HostSource
 
 
 class MockHostSource(HostSource):
+    config_spec = {
+        "hostsource": {
+            "hosts": Option(str),
+        },
+    }
+
     def __init__(self, config):
-        pass
+        self.hosts = config["hostsource"]["hosts"].split()
 
     def get_hosts(self):
-        return succeed(
-            ["host-%02d" % i for i in xrange(1, 270)] +
-            ["otherhost-%02d" % i for i in xrange(1, 5)]
-        )
+        return succeed(self.hosts)
 
     def should_be_alive(self, host):
         return succeed(random.choice((True, True, True, False)))
