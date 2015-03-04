@@ -34,7 +34,7 @@ CONFIG_SPEC = {
     "deploy": {
         "log-directory": Option(str),
         "wordlist": Option(str),
-        "build-host": Option(str),
+        "code-host": Option(str),
         "default-sleeptime": Option(int),
         "default-parallel": Option(int),
     },

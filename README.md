@@ -14,7 +14,7 @@ To roll stuff out, select a group of hosts to affect:
 
 And what commands you'd like to run:
 
-* components to deploy get built on a central build server then deployed to
+* components to deploy get built on configurable build servers then deployed to
   individual hosts (`-d`)
 * restart services (`-r`)
 * arbitrary other commands may be specified as long as the remote end knows how
