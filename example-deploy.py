@@ -21,7 +21,7 @@ def run_and_capture(*argv):
 
 
 def synchronize(*components):
-    """Synchronize the code repistories with upstreams.
+    """Synchronize the code repositories with upstreams.
 
     This is called once on the code host with a list of all components to
     synchronize. The script should fetch from upstream remotes, sync with a SCM
