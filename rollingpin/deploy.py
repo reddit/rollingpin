@@ -139,7 +139,7 @@ class Deployer(object):
                         if build_host:
                             by_buildhost[build_host].append(component_ref)
                         else:
-                            # no build host means we just pass the build token
+                            # no build host means we just pass the sync token
                             # straight through as a deploy token
                             deploy_command.append(component_ref)
 
@@ -151,6 +151,8 @@ class Deployer(object):
                             build_host, [build_command])
 
                         for ref in build_refs:
+                            component, at, sync_token = ref.partition("@")
+                            assert at == "@"
                             try:
                                 deploy_ref = component + "@" + tokens[ref]
                             except KeyError:
