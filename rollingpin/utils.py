@@ -13,13 +13,16 @@ def sleep(seconds):
     return deferred
 
 
+valid_push_word = re.compile("^[a-z:]{5,}$")
+
+
 def random_word(wordlist_path):
     """Return a random word chosen from a given dictionary file."""
     file_size = os.path.getsize(wordlist_path)
 
     with open(wordlist_path, "r") as wordlist:
         word = ""
-        while not word.isalpha() or not word.islower() or len(word) < 5:
+        while not valid_push_word.match(word):
             position = random.randint(1, file_size)
             wordlist.seek(position)
             wordlist.readline()
