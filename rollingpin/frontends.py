@@ -1,3 +1,5 @@
+from __future__ import division
+
 import collections
 import logging
 import sys
@@ -102,13 +104,19 @@ class HeadlessFrontend(object):
         self.start_time = time.time()
         print colorize("*** starting deploy", Color.BOLD(Color.GREEN))
 
+    def count_hosts(self):
+        return len(self.host_results)
+
+    def count_completed_hosts(self):
+        return sum(1 for v in self.host_results.itervalues() if v)
+
+    def percent_complete(self):
+        return (self.count_completed_hosts() / self.count_hosts()) * 100
+
     def on_host_end(self, host):
         if host in self.host_results:
             self.host_results[host] = "success"
-
-            complete_hosts = sum(1 for v in self.host_results.itervalues() if v)
-            percent = (float(complete_hosts) / len(self.host_results)) * 100
-            print colorize("*** %d%% done" % percent, Color.GREEN)
+            print colorize("*** %d%% done" % self.percent_complete(), Color.GREEN)
 
     def on_host_abort(self, host, error, should_be_alive):
         if host in self.host_results:
@@ -157,10 +165,16 @@ class StdioListener(Protocol):
         self.old_termio_settings = None
 
     def connectionMade(self):
-        # go to single-character, no-echo mode
+        self.disable_echo()
+
+    def disable_echo(self):
         fileno = sys.stdin.fileno()
         self.old_termio_settings = termios.tcgetattr(fileno)
         tty.setcbreak(fileno)
+
+    def restore_terminal_settings(self):
+        fileno = sys.stdin.fileno()
+        termios.tcsetattr(fileno, termios.TCSADRAIN, self.old_termio_settings)
 
     def dataReceived(self, data):
         waiter = self.character_waiter
@@ -168,9 +182,7 @@ class StdioListener(Protocol):
         waiter.callback(data)
 
     def connectionLost(self, reason):
-        # restore the terminal
-        fileno = sys.stdin.fileno()
-        termios.tcsetattr(fileno, termios.TCSADRAIN, self.old_termio_settings)
+        self.restore_terminal_settings()
 
     @inlineCallbacks
     def read_character(self):
@@ -178,6 +190,19 @@ class StdioListener(Protocol):
             character = yield self.character_waiter
             if character:
                 returnValue(character)
+
+    @inlineCallbacks
+    def raw_input(self, prompt):
+        self.restore_terminal_settings()
+
+        try:
+            sys.stdout.write(prompt)
+            sys.stdout.flush()
+
+            line = yield self.character_waiter
+            returnValue(line.rstrip("\n"))
+        finally:
+            self.disable_echo()
 
 
 class HeadfulFrontend(HeadlessFrontend):
@@ -200,45 +225,53 @@ class HeadfulFrontend(HeadlessFrontend):
 
     @inlineCallbacks
     def on_enqueue(self, deploys):
-        # don't bother pausing if we're at the end
-        completed_hosts = sum(
-            1 for result in self.host_results.itervalues()
-            if result is not None)
-        total_hosts = len(self.host_results)
-
-        if completed_hosts + self.pause_after >= total_hosts:
-            return
-
+        # the deployer has added a host to the queue to deploy to
         self.enqueued_hosts += 1
 
-        if self.pause_after and self.enqueued_hosts == self.pause_after:
-            # wait for outstanding hosts to finish up
-            yield DeferredList(deploys, consumeErrors=True)
+        # we won't pause the action if we're near the end or have room for more
+        completed_hosts = self.count_completed_hosts()
+        if completed_hosts + self.pause_after >= self.count_hosts():
+            return
 
-            # prompt the user to continue
+        if not self.pause_after or self.enqueued_hosts < self.pause_after:
+            return
+
+        # wait for outstanding hosts to finish up
+        yield DeferredList(deploys, consumeErrors=True)
+
+        # prompt the user for what to do now
+        while True:
             print colorize(
                 "*** waiting for input: e[x]it, [c]ontinue, [a]ll remaining, "
-                "[1-9] more hosts", Color.BOLD(Color.CYAN))
+                "[p]ercentage", Color.BOLD(Color.CYAN))
 
-            while True:
-                c = yield self.console_input.read_character()
+            c = yield self.console_input.read_character()
 
-                if c == "a":
-                    self.pause_after = 0
-                    break
-                elif c == "x":
-                    raise AbortDeploy("x pressed")
-                elif c == "c":
-                    self.pause_after = 1
-                    break
-                else:
-                    try:
-                        num_hosts = int(c)
-                    except ValueError:
-                        continue
+            if c == "a":
+                self.pause_after = 0
+                break
+            elif c == "x":
+                raise AbortDeploy("x pressed")
+            elif c == "c":
+                self.pause_after = 1
+                break
+            elif c == "p":
+                min_percent = self.percent_complete() + 1
+                prompt = "how far? (%d-100) " % min_percent
+                prompt_input = yield self.console_input.raw_input(prompt)
 
-                    if num_hosts > 0:
-                        self.pause_after = num_hosts
-                        break
+                try:
+                    desired_percent = int(prompt_input)
+                except ValueError:
+                    continue
 
-            self.enqueued_hosts = 0
+                if not (min_percent <= desired_percent <= 100):
+                    print("must be an integer between %d and 100" % min_percent)
+                    continue
+
+                completed_hosts = self.count_completed_hosts()
+                desired_host_index = int((desired_percent / 100) * self.count_hosts())
+                self.pause_after = desired_host_index - completed_hosts
+                break
+
+        self.enqueued_hosts = 0
