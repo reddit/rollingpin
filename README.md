@@ -34,7 +34,55 @@ If configured, graphite will be sent a metric of the form
 
 The rolling pin also features integration with [Harold][2].
 
-See [example.ini](example.ini) for configuration instructions.
+Setup
+-----
+
+To install:
+
+```
+https://github.com/reddit/rollingpin.git
+pip install .
+```
+
+Next, copy `example.ini` to `/etc/rollingpin.ini` or `~/.rollingpin.ini`, modifying the hostsource to suit your environment.
+
+For example, to set up an alias and deploy to 3 static hosts:
+
+```
+[hostsource]
+provider = mock
+hosts = host1 host2 host3
+
+[aliases]
+myhosts = host*
+```
+
+The hosts you are deploying to must have a local deploy script ready to be
+executed.  You can use `example-deploy.py` as a starting point.
+
+Once your deploy script is in place, update your configuration with its path:
+
+```
+[transport]
+command = /usr/local/bin/deploy
+```
+
+When deploying, the deploy script will be called with the desired command on
+the command line.
+
+For instance:
+
+```
+rollout -h myhosts -c foo
+```
+
+will call:
+
+```
+/usr/local/bin/deploy foo
+```
+
+on the hosts matched by the `myhosts ` alias.
 
 
 [1]: http://i.imgur.com/66Nr9Wo.jpg
