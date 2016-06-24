@@ -79,7 +79,7 @@ rollout -h myhosts -c foo
 will call:
 
 ```ini
-/usr/local/bin/deploy foo
+sudo /usr/local/bin/deploy foo
 ```
 
 on the hosts matched by the `myhosts ` alias.
