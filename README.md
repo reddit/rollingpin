@@ -41,14 +41,14 @@ To install:
 
 ```
 https://github.com/reddit/rollingpin.git
-pip install .
+python setup.py install
 ```
 
 Next, copy `example.ini` to `/etc/rollingpin.ini` or `~/.rollingpin.ini`, modifying the hostsource to suit your environment.
 
 For example, to set up an alias and deploy to 3 static hosts:
 
-```
+```ini
 [hostsource]
 provider = mock
 hosts = host1 host2 host3
@@ -62,7 +62,7 @@ executed.  You can use `example-deploy.py` as a starting point.
 
 Once your deploy script is in place, update your configuration with its path:
 
-```
+```ini
 [transport]
 command = /usr/local/bin/deploy
 ```
@@ -72,13 +72,13 @@ the command line.
 
 For instance:
 
-```
+```ini
 rollout -h myhosts -c foo
 ```
 
 will call:
 
-```
+```ini
 /usr/local/bin/deploy foo
 ```
 
