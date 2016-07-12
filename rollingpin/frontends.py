@@ -53,7 +53,7 @@ class HostFormatter(logging.Formatter):
         logging.Formatter.__init__(self)
 
     def format(self, record):
-        formatted = logging.Formatter.format(self, record)
+        formatted = logging.Formatter.format(self, record).decode("utf8")
 
         if hasattr(record, "host"):
             formatted = (self.hostname_format % record.host) + formatted

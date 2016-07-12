@@ -8,7 +8,7 @@ class LogFormatter(logging.Formatter):
     converter = time.gmtime
 
     def format(self, record):
-        formatted = logging.Formatter.format(self, record)
+        formatted = logging.Formatter.format(self, record).decode("utf8")
 
         if hasattr(record, "host"):
             formatted = ("[%10s]  " % record.host) + formatted
