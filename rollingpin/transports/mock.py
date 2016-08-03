@@ -28,7 +28,9 @@ class MockTransportConnection(TransportConnection):
         command, args = command[0], command[1:]
         result = {}
 
-        if command == "build":
+        if command == "synchronize":
+            log.debug("MOCK: git fetch")
+        elif command == "build":
             log.debug("MOCK: build stuff")
             for arg in args:
                 result[arg] = "build-token"
