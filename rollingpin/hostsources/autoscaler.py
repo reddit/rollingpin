@@ -75,16 +75,24 @@ class AutoscalerHostSource(HostSource):
         self.password = config["hostsource"]["password"]
 
     @inlineCallbacks
-    def _get_host_pool(self, hostname, by_pool):
-        path = posixpath.join("/server", hostname, "asg")
+    def _get_host_info(self, hostname, by_pool, addresses):
+        base_path = posixpath.join("/server", hostname)
+
         try:
-            pool = yield self.client.get(path)
+            node = yield self.client.get(posixpath.join(base_path, "asg"))
         except zookeeper.NoNodeException:
             pool = ""
         else:
-            pool = pool[0]
-
+            pool = node[0]
         by_pool[pool].append(hostname)
+
+        try:
+            node = yield self.client.get(posixpath.join(base_path, "local-ipv4"))
+        except zookeeper.NoNodeException:
+            address = hostname
+        else:
+            address = node[0]
+        addresses[hostname] = address
 
     @inlineCallbacks
     def get_hosts(self):
@@ -96,12 +104,14 @@ class AutoscalerHostSource(HostSource):
                     "digest", "%s:%s" % (self.user, self.password))
 
             hostnames = yield self.client.get_children("/server")
+            hostnames = sorted_nicely(hostnames)
 
             by_pool = collections.defaultdict(list)
-            yield parallel_map(
-                sorted_nicely(hostnames), self._get_host_pool, by_pool)
+            addresses = {}
+            yield parallel_map(hostnames, self._get_host_info, by_pool, addresses)
+
             pool_aware = interleaved(by_pool)
-            returnValue(Host(name, name) for name in pool_aware)
+            returnValue(Host(name, addresses[name]) for name in pool_aware)
         except zookeeper.ZooKeeperException as e:
             raise HostSourceError(e)
 
