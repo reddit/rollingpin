@@ -64,7 +64,7 @@ class HostFormatter(logging.Formatter):
 
 class HeadlessFrontend(object):
     def __init__(self, event_bus, hosts, verbose_logging):
-        longest_hostname = max(len(host) for host in hosts)
+        longest_hostname = max(len(host.name) for host in hosts)
 
         formatter = HostFormatter(longest_hostname)
         self.log_handler = logging.StreamHandler()
@@ -142,7 +142,7 @@ class HeadlessFrontend(object):
                    "hosts:" % len(warning_hosts))
             print "      ", " ".join(
                 colorize(host, Color.YELLOW)
-                for host in sorted_nicely(warning_hosts))
+                for host in sorted_nicely(host.name for host in warning_hosts))
 
         if by_result["error"]:
             error_hosts = by_result["error"]
@@ -150,7 +150,7 @@ class HeadlessFrontend(object):
                    "healthy hosts:" % len(error_hosts))
             print "      ", " ".join(
                 colorize(host, Color.RED)
-                for host in sorted_nicely(error_hosts))
+                for host in sorted_nicely(host.name for host in error_hosts))
 
         successful_hosts = len(by_result["success"])
         print "*** processed %d hosts successfully" % successful_hosts

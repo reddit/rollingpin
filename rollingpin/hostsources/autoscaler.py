@@ -13,7 +13,7 @@ from twisted.internet.defer import (
 from txzookeeper.client import ZookeeperClient
 
 from ..config import Option
-from ..hostsources import HostSource, HostSourceError
+from ..hostsources import Host, HostSource, HostSourceError
 from ..utils import sorted_nicely
 
 
@@ -101,13 +101,13 @@ class AutoscalerHostSource(HostSource):
             yield parallel_map(
                 sorted_nicely(hostnames), self._get_host_pool, by_pool)
             pool_aware = interleaved(by_pool)
-            returnValue(pool_aware)
+            returnValue(Host(name, name) for name in pool_aware)
         except zookeeper.ZooKeeperException as e:
             raise HostSourceError(e)
 
     @inlineCallbacks
     def should_be_alive(self, host):
-        host_root = "/server/%s" % host
+        host_root = "/server/%s" % host.name
 
         try:
             state = yield self.client.get(host_root + "/state")
@@ -124,5 +124,5 @@ class AutoscalerHostSource(HostSource):
         except zookeeper.ZooKeeperException as e:
             # fail safe
             logging.warning(
-                "autoscaler: failed to check liveliness for %r: %s", host, e)
+                "autoscaler: failed to check liveliness for %r: %s", host.name, e)
             returnValue(True)

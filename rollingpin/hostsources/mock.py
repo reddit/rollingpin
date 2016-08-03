@@ -3,7 +3,7 @@ import random
 from twisted.internet.defer import succeed
 
 from ..config import Option
-from ..hostsources import HostSource
+from ..hostsources import Host, HostSource
 
 
 class MockHostSource(HostSource):
@@ -17,7 +17,7 @@ class MockHostSource(HostSource):
         self.hosts = config["hostsource"]["hosts"].split()
 
     def get_hosts(self):
-        return succeed(self.hosts)
+        return succeed(Host(name, name + ".local") for name in self.hosts)
 
     def should_be_alive(self, host):
         return succeed(random.choice((True, True, True, False)))

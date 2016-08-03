@@ -11,6 +11,7 @@ from twisted.internet.defer import (
     returnValue,
 )
 
+from .hostsources import Host
 from .transports import TransportError
 from .utils import sleep
 
@@ -60,7 +61,7 @@ class Deployer(object):
 
     @inlineCallbacks
     def process_host(self, host, commands):
-        log = logging.LoggerAdapter(self.log, {"host": host})
+        log = logging.LoggerAdapter(self.log, {"host": host.name})
 
         yield self.event_bus.trigger("host.begin", host=host)
 
@@ -68,7 +69,7 @@ class Deployer(object):
 
         try:
             log.info("connecting")
-            connection = yield self.transport.connect_to(host)
+            connection = yield self.transport.connect_to(host.address)
             for command in commands:
                 log.info(" ".join(command))
                 yield self.event_bus.trigger(
@@ -123,8 +124,9 @@ class Deployer(object):
                     # this will return a build token and build host for each
                     # component
                     sync_command = ["synchronize"] + components
+                    code_host = Host.from_hostname(self.code_host)
                     (sync,) = yield self.process_host(
-                        self.code_host, [sync_command])
+                        code_host, [sync_command])
 
                     # this is where we build up the final deploy command
                     # resulting from all our syncing and building
@@ -145,8 +147,9 @@ class Deployer(object):
 
                     # ask each build host to build our components and return
                     # a deploy token
-                    for build_host, build_refs in by_buildhost.iteritems():
+                    for build_hostname, build_refs in by_buildhost.iteritems():
                         build_command = ["build"] + build_refs
+                        build_host = Host.from_hostname(build_hostname)
                         (tokens,) = yield self.process_host(
                             build_host, [build_command])
 

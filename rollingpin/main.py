@@ -125,16 +125,19 @@ def _select_hosts(config, args):
         print_error("could not fetch host list: {}", e)
         sys.exit(1)
 
+    hosts_by_name = {host.name: host for host in all_hosts}
+    hostnames = hosts_by_name.keys()
+
     try:
-        aliases = resolve_aliases(config["aliases"], all_hosts)
-        full_hostlist = resolve_hostlist(args.host_refs, all_hosts, aliases)
+        aliases = resolve_aliases(config["aliases"], hostnames)
+        full_hostlist = resolve_hostlist(args.host_refs, hostnames, aliases)
         selected_hosts = restrict_hostlist(
             full_hostlist, args.start_at, args.stop_before)
     except HostlistError as e:
         print_error("{}", e)
         sys.exit(1)
 
-    returnValue(selected_hosts)
+    returnValue([hosts_by_name[name] for name in selected_hosts])
 
 
 @inlineCallbacks
@@ -165,7 +168,7 @@ def _main(reactor, *raw_args):
     # execute
     if args.list_hosts:
         for host in hosts:
-            print host
+            print host.name
     else:
         deployer = Deployer(config, event_bus, args.parallel, args.sleeptime)
 
