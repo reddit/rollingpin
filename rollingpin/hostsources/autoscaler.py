@@ -1,11 +1,8 @@
-import collections
 import logging
 import posixpath
-import math
 
 import zookeeper
 from twisted.internet.defer import (
-    DeferredSemaphore,
     gatherResults,
     inlineCallbacks,
     returnValue,
@@ -14,46 +11,7 @@ from txzookeeper.client import ZookeeperClient
 
 from ..config import Option
 from ..hostsources import Host, HostSource, HostSourceError
-from ..utils import sorted_nicely
-
-
-MAX_PARALLELISM = 50
-
-
-@inlineCallbacks
-def parallel_map(iterable, fn, *args, **kwargs):
-    deferreds = []
-    parallelism_limiter = DeferredSemaphore(MAX_PARALLELISM)
-    for item in iterable:
-        d = parallelism_limiter.run(fn, item, *args, **kwargs)
-        deferreds.append(d)
-    results = yield gatherResults(deferreds)
-    returnValue(results)
-
-
-def _distribute_into(master, additions):
-    assert len(master) >= len(additions)
-
-    spread = int(math.ceil(float(len(master)) / len(additions)))
-
-    for i, item in enumerate(additions):
-        master.insert(i * spread, item)
-
-
-def interleaved(by_pool):
-    """Merge lists such that items from the same sublist are maximally apart.
-
-    This ensures that no pool gets a bunch of its servers taken down all at
-    the same time due to an unlucky host ordering.
-
-    """
-    pools_by_size = sorted(
-        by_pool.items(), key=lambda t: len(t[1]), reverse=True)
-
-    result = pools_by_size[0][1]
-    for pool, hosts in pools_by_size[1:]:
-        _distribute_into(result, hosts)
-    return result
+from ..utils import parallel_map
 
 
 class AutoscalerHostSource(HostSource):
@@ -75,7 +33,7 @@ class AutoscalerHostSource(HostSource):
         self.password = config["hostsource"]["password"]
 
     @inlineCallbacks
-    def _get_host_info(self, hostname, by_pool, addresses):
+    def _get_host_info(self, hostname):
         base_path = posixpath.join("/server", hostname)
 
         try:
@@ -84,7 +42,6 @@ class AutoscalerHostSource(HostSource):
             pool = ""
         else:
             pool = node[0]
-        by_pool[pool].append(hostname)
 
         try:
             node = yield self.client.get(posixpath.join(base_path, "local-ipv4"))
@@ -92,7 +49,8 @@ class AutoscalerHostSource(HostSource):
             address = hostname
         else:
             address = node[0]
-        addresses[hostname] = address
+
+        returnValue(Host(hostname, hostname, address, pool))
 
     @inlineCallbacks
     def get_hosts(self):
@@ -104,14 +62,8 @@ class AutoscalerHostSource(HostSource):
                     "digest", "%s:%s" % (self.user, self.password))
 
             hostnames = yield self.client.get_children("/server")
-            hostnames = sorted_nicely(hostnames)
-
-            by_pool = collections.defaultdict(list)
-            addresses = {}
-            yield parallel_map(hostnames, self._get_host_info, by_pool, addresses)
-
-            pool_aware = interleaved(by_pool)
-            returnValue(Host(name, addresses[name]) for name in pool_aware)
+            hosts = yield parallel_map(hostnames, self._get_host_info)
+            returnValue(hosts)
         except zookeeper.ZooKeeperException as e:
             raise HostSourceError(e)
 

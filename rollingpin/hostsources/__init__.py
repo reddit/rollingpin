@@ -5,11 +5,11 @@ class HostSourceError(Exception):
     pass
 
 
-_Host = collections.namedtuple("_Host", "name address")
+_Host = collections.namedtuple("_Host", "id name address pool")
 class Host(_Host):
     @classmethod
     def from_hostname(cls, name):
-        return Host(name, name)
+        return Host(name, name, name, "")
 
 
 class HostSource(object):

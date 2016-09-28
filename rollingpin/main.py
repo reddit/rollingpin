@@ -27,7 +27,7 @@ from .hostsources import HostSourceError
 from .graphite import enable_graphite_notifications
 from .log import log_to_file
 from .providers import get_provider, UnknownProviderError
-from .utils import random_word
+from .utils import random_word, interleaved
 
 
 CONFIG_SPEC = {
@@ -120,10 +120,12 @@ def _parse_args(config, raw_args):
 def _select_hosts(config, args):
     # get the list of hosts from the host source
     try:
-        all_hosts = yield config["hostsource"].get_hosts()
+        all_hosts_unsorted = yield config["hostsource"].get_hosts()
     except HostSourceError as e:
         print_error("could not fetch host list: {}", e)
         sys.exit(1)
+
+    all_hosts = interleaved(all_hosts_unsorted, key=lambda h: h.pool)
 
     hosts_by_name = {host.name: host for host in all_hosts}
     hostnames = hosts_by_name.keys()

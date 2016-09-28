@@ -1,9 +1,20 @@
+import collections
+import math
 import os
 import random
 import re
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import (
+    Deferred,
+    DeferredSemaphore,
+    gatherResults,
+    inlineCallbacks,
+    returnValue,
+)
+
+
+MAX_PARALLELISM = 50
 
 
 def sleep(seconds):
@@ -47,3 +58,42 @@ def sorted_nicely(iterable):
         return [tryint(c) for c in re.split("([0-9]+)", key)]
 
     return sorted(iterable, key=alphanum_key)
+
+
+@inlineCallbacks
+def parallel_map(iterable, fn, *args, **kwargs):
+    deferreds = []
+    parallelism_limiter = DeferredSemaphore(MAX_PARALLELISM)
+    for item in iterable:
+        d = parallelism_limiter.run(fn, item, *args, **kwargs)
+        deferreds.append(d)
+    results = yield gatherResults(deferreds)
+    returnValue(results)
+
+
+def _distribute_into(master, additions):
+    assert len(master) >= len(additions)
+
+    spread = int(math.ceil(float(len(master)) / len(additions)))
+
+    for i, item in enumerate(additions):
+        master.insert(i * spread, item)
+
+
+def interleaved(items, key):
+    """Reorder a list such that items of the same key are maximally apart.
+
+    This ensures that no pool gets a bunch of its servers taken down all at
+    the same time due to an unlucky host ordering.
+
+    """
+    grouped = collections.defaultdict(list)
+    for item in items:
+        grouped[key(item)].append(item)
+
+    groups_by_size = sorted(grouped.values(), key=len, reverse=True)
+
+    result = groups_by_size[0]
+    for items in groups_by_size[1:]:
+        _distribute_into(result, items)
+    return result
