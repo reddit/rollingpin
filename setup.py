@@ -35,6 +35,7 @@ setup(
         "rollingpin.hostsource": [
             "mock = rollingpin.hostsources.mock:MockHostSource",
             "autoscaler = rollingpin.hostsources.autoscaler:AutoscalerHostSource",
+            "hippo = rollingpin.hostsources.hippo:HippoHostSource",
         ],
 
         "rollingpin.transport": [
