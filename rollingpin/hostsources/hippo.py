@@ -42,8 +42,7 @@ class HippoHostSource(HostSource):
             returnValue(None)
 
         host_info = json.loads(host_json)
-        tags = {tag["Key"]: tag["Value"]
-                for tag in host_info["properties"]["tags"]}
+        tags = host_info["properties"]["tags"]
         try:
             hostname = tags["Name"]
         except KeyError:
