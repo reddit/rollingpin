@@ -48,7 +48,8 @@ def resolve_aliases(unresolved_aliases, all_hosts):
         hosts = []
 
         for glob in globs:
-            globbed = fnmatch.filter(all_hosts, glob)
+            globbed = [host for host in all_hosts
+                       if fnmatch.fnmatch(host.name, glob)]
             if not globbed:
                 raise UnresolvableAliasError(glob)
             hosts.extend(globbed)
@@ -66,20 +67,23 @@ def resolve_hostlist(host_refs, all_hosts, aliases):
 
         if ref in aliases:
             resolved_hosts.extend(aliases[ref])
-        elif ref in all_hosts:
-            resolved_hosts.append(ref)
         else:
-            raise UnresolvableHostRefError(ref)
+            matching_hosts = [host for host in all_hosts if host.name == ref]
+
+            if matching_hosts:
+                resolved_hosts.extend(matching_hosts)
+            else:
+                raise UnresolvableHostRefError(ref)
 
     return resolved_hosts
 
 
 def restrict_hostlist(hosts, start_at, stop_before):
-    if start_at and start_at not in hosts:
+    if start_at and not any(host.name == start_at for host in hosts):
         raise HostSelectionError(
             "--startat: %r not in host list" % start_at)
 
-    if stop_before and stop_before not in hosts:
+    if stop_before and not any(host.name == stop_before for host in hosts):
         raise HostSelectionError(
             "--stopbefore: %r not in host list" % stop_before)
 
@@ -87,10 +91,10 @@ def restrict_hostlist(hosts, start_at, stop_before):
         filtered = hosts
         if stop_before:
             filtered = itertools.takewhile(
-                lambda host: host != stop_before, filtered)
+                lambda host: host.name != stop_before, filtered)
         if start_at:
             filtered = itertools.dropwhile(
-                lambda host: host != start_at, filtered)
+                lambda host: host.name != start_at, filtered)
         return list(filtered)
     else:
         return hosts

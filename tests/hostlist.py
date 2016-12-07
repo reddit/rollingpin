@@ -14,6 +14,11 @@ from rollingpin.hostlist import (
 from tests import make_configparser
 
 
+class MockHost(object):
+    def __init__(self, name):
+        self.name = name
+
+
 class TestAliasParsing(unittest.TestCase):
     def test_no_section(self):
         empty_parser = ConfigParser.ConfigParser()
@@ -41,16 +46,18 @@ class TestAliasResolution(unittest.TestCase):
         self.assertEqual(aliases, {})
 
     def test_resolve_direct_names(self):
-        aliases = resolve_aliases({"a": ["b"]}, ["b"])
-        self.assertEqual(aliases, {"a": ["b"]})
+        b = MockHost("b")
+        aliases = resolve_aliases({"a": ["b"]}, [b])
+        self.assertEqual(aliases, {"a": [b]})
 
     def test_unsatisfied_glob(self):
         with self.assertRaises(UnresolvableAliasError):
             resolve_aliases({"a": ["b"]}, [])
 
     def test_glob(self):
-        aliases = resolve_aliases({"a": ["a-*"]}, ["a-1", "a-2", "b-1"])
-        self.assertEqual(aliases, {"a": ["a-1", "a-2"]})
+        a_1, a_2, b_1 = MockHost("a-1"), MockHost("a-2"), MockHost("b-1")
+        aliases = resolve_aliases({"a": ["a-*"]}, [a_1, a_2, b_1])
+        self.assertEqual(aliases, {"a": [a_1, a_2]})
 
 
 class TestHostListResolution(unittest.TestCase):
@@ -59,21 +66,23 @@ class TestHostListResolution(unittest.TestCase):
         self.assertEqual(hostlist, [])
 
     def test_simple_host(self):
-        hostlist = resolve_hostlist(["a"], ["a"], {})
-        self.assertEqual(hostlist, ["a"])
+        a = MockHost("a")
+        hostlist = resolve_hostlist(["a"], [a], {})
+        self.assertEqual(hostlist, [a])
 
     def test_aliases(self):
-        hostlist = resolve_hostlist(["alias"], ["a", "b", "c"], {"alias": ["a", "b"]})
-        self.assertEqual(hostlist, ["a", "b"])
+        a, b, c = MockHost("a"), MockHost("b"), MockHost("c")
+        hostlist = resolve_hostlist(["alias"], [a, b, c], {"alias": [a, b]})
+        self.assertEqual(hostlist, [a, b])
 
     def test_unknown_ref(self):
         with self.assertRaises(UnresolvableHostRefError):
-            resolve_hostlist(["bad"], ["a", "b"], {})
+            resolve_hostlist(["bad"], [MockHost("a"), MockHost("b")], {})
 
 
 class TestHostListRestriction(unittest.TestCase):
     def setUp(self):
-        self.hostlist = ["a", "b", "c", "d", "e", "f"]
+        self.hostlist = map(MockHost, ["a", "b", "c", "d", "e", "f"])
 
     def test_empty(self):
         hostlist = restrict_hostlist([], None, None)
@@ -89,15 +98,15 @@ class TestHostListRestriction(unittest.TestCase):
 
     def test_startat(self):
         hostlist = restrict_hostlist(self.hostlist, "c", None)
-        self.assertEqual(hostlist, ["c", "d", "e", "f"])
+        self.assertEqual(hostlist, self.hostlist[2:])
 
     def test_stopbefore(self):
         hostlist = restrict_hostlist(self.hostlist, None, "c")
-        self.assertEqual(hostlist, ["a", "b"])
+        self.assertEqual(hostlist, self.hostlist[:2])
 
     def test_startat_and_stopbefore(self):
         hostlist = restrict_hostlist(self.hostlist, "c", "e")
-        self.assertEqual(hostlist, ["c", "d"])
+        self.assertEqual(hostlist, self.hostlist[2:-2])
 
     def test_stopbefore_before_startat(self):
         hostlist = restrict_hostlist(self.hostlist, "e", "c")
