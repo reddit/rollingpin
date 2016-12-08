@@ -48,10 +48,8 @@ class HippoHostSource(HostSource):
         except KeyError:
             try:
                 hostname = tags["HostClass"] + instance_id[1:]
-                logging.debug("falling back to hostclass for %r", hostname)
             except KeyError:
                 hostname = instance_id
-                logging.debug("falling back to instance id for %r", hostname)
 
         address = host_info["properties"]["private_ip"]
         pool = tags.get("aws:autoscaling:groupName", "")
