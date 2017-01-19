@@ -13,7 +13,7 @@ class BufferedTestCommand(test):
 
 setup(
     name="rollingpin",
-    version="",
+    version="1.0",
     packages=find_packages(exclude=["tests"]),
     install_requires=[
         "Twisted>=13.1",

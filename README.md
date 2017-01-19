@@ -85,5 +85,13 @@ sudo /usr/local/bin/deploy foo
 on the hosts matched by the `myhosts ` alias.
 
 
+Development
+-----
+For local dev, you can run all tests/lint in a local docker container by:
+```bash
+docker build . -t rollingpin:test && docker run --rm rollingpin:test
+```
+
+
 [1]: http://i.imgur.com/66Nr9Wo.jpg
 [2]: https://github.com/spladug/harold
