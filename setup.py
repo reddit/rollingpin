@@ -26,6 +26,9 @@ setup(
     cmdclass={
         "test": BufferedTestCommand,
     },
+    tests_require=[
+        "mock",
+    ],
     test_suite="tests",
     entry_points={
         "console_scripts": [

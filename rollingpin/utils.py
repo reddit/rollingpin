@@ -1,4 +1,5 @@
 import collections
+import contextlib
 import math
 import os
 import random
@@ -15,6 +16,15 @@ from twisted.internet.defer import (
 
 
 MAX_PARALLELISM = 50
+
+
+@contextlib.contextmanager
+def swallow_exceptions(title, log):
+    """Decorator to swallow exception. Used in conjuction with a 'with' statement"""
+    try:
+        yield
+    except Exception as e:
+        log.warning("%s: %s", title, e)
 
 
 def sleep(seconds):

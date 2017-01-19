@@ -1,16 +1,17 @@
-import contextlib
 import getpass
 import hashlib
 import hmac
 import logging
 import posixpath
 import urllib
-import urlparse
 
+import urlparse
 from twisted.internet import reactor
 from twisted.internet.defer import succeed, inlineCallbacks
 from twisted.web.client import Agent, HTTPConnectionPool
 from twisted.web.http_headers import Headers
+
+from .utils import swallow_exceptions
 
 
 class FormEncodedBodyProducer(object):
@@ -62,15 +63,6 @@ class HaroldWhisperer(object):
         })
         return self.agent.request("POST", url, headers, body_producer)
 
-
-@contextlib.contextmanager
-def swallow_exceptions(log):
-    try:
-        yield
-    except Exception as e:
-        log.warning("harold: %s", e)
-
-
 class HaroldNotifier(object):
     def __init__(self, harold, event_bus, word, hosts, command_line, log_path):
         self.log = logging.getLogger(__name__)
@@ -90,7 +82,7 @@ class HaroldNotifier(object):
 
     @inlineCallbacks
     def on_deploy_begin(self):
-        with swallow_exceptions(self.log):
+        with swallow_exceptions("harold", self.log):
             yield self.harold.make_request("deploy/begin", {
                 "id": self.word,
                 "who": getpass.getuser(),
@@ -101,7 +93,7 @@ class HaroldNotifier(object):
 
     @inlineCallbacks
     def on_deploy_abort(self, reason):
-        with swallow_exceptions(self.log):
+        with swallow_exceptions("harold", self.log):
             yield self.harold.make_request("deploy/abort", {
                 "id": self.word,
                 "reason": str(reason),
@@ -109,7 +101,7 @@ class HaroldNotifier(object):
 
     @inlineCallbacks
     def on_deploy_end(self):
-        with swallow_exceptions(self.log):
+        with swallow_exceptions("harold", self.log):
             yield self.harold.make_request("deploy/end", {
                 "id": self.word,
             })
@@ -118,7 +110,7 @@ class HaroldNotifier(object):
     def on_host_end(self, host):
         self.completed_hosts += 1
 
-        with swallow_exceptions(self.log):
+        with swallow_exceptions("harold", self.log):
             yield self.harold.make_request("deploy/progress", {
                 "id": self.word,
                 "host": host,
