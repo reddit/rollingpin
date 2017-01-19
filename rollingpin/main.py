@@ -5,6 +5,7 @@ import sys
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import react
 
+from .elasticsearch import enable_elastic_search_notifications
 from .args import make_arg_parser, construct_canonical_commandline
 from .config import (
     coerce_and_validate_config,
@@ -46,6 +47,12 @@ CONFIG_SPEC = {
 
     "graphite": OptionalSection({
         "endpoint": Option(str, default=None),
+    }),
+
+    "elasticsearch": OptionalSection({
+        "endpoint": Option(str, default=None),
+        "index": Option(str, default=None),
+        "type": Option(str, default=None),
     }),
 
     "hostsource": {
@@ -158,6 +165,9 @@ def _main(reactor, *raw_args):
 
     if config["graphite"]["endpoint"]:
         enable_graphite_notifications(config, event_bus, args.components)
+
+    if config["elasticsearch"]["endpoint"]:
+        enable_elastic_search_notifications(config, event_bus, args.components)
 
     if os.isatty(sys.stdout.fileno()):
         HeadfulFrontend(event_bus, hosts, args.verbose_logging, args.pause_after)
