@@ -6,6 +6,8 @@ class HostSourceError(Exception):
 
 
 _Host = collections.namedtuple("_Host", "id name address pool")
+
+
 class Host(_Host):
     @classmethod
     def from_hostname(cls, name):

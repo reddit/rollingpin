@@ -31,6 +31,7 @@ class DeployError(Exception):
 
 
 class HostDeployError(DeployError):
+
     def __init__(self, host, error):
         self.host = host
         self.error = error
@@ -41,6 +42,7 @@ class HostDeployError(DeployError):
 
 
 class ComponentNotBuiltError(DeployError):
+
     def __init__(self, component):
         self.component = component
         super(ComponentNotBuiltError, self).__init__()
@@ -50,6 +52,7 @@ class ComponentNotBuiltError(DeployError):
 
 
 class Deployer(object):
+
     def __init__(self, config, event_bus, parallel, sleeptime):
         self.log = logging.getLogger(__name__)
         self.host_source = config["hostsource"]

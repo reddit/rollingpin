@@ -15,6 +15,7 @@ from .utils import swallow_exceptions
 
 
 class FormEncodedBodyProducer(object):
+
     def __init__(self, data):
         encoded = urllib.urlencode(
             {k: unicode(v).encode('utf-8') for k, v in data.iteritems()})
@@ -36,6 +37,7 @@ class FormEncodedBodyProducer(object):
 
 
 class HaroldWhisperer(object):
+
     def __init__(self, config):
         self.base_url = config["harold"]["base-url"]
         self.secret = config["harold"]["hmac-secret"]
@@ -63,7 +65,9 @@ class HaroldWhisperer(object):
         })
         return self.agent.request("POST", url, headers, body_producer)
 
+
 class HaroldNotifier(object):
+
     def __init__(self, harold, event_bus, word, hosts, command_line, log_path):
         self.log = logging.getLogger(__name__)
         self.harold = harold

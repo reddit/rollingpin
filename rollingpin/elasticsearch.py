@@ -35,6 +35,7 @@ class JSONBodyProducer(object):
 
 
 class ElasticSearchNotifier(object):
+
     def __init__(self, config, components, hosts, command_line, word):
         self.logger = logging.getLogger(__name__)
         base_url = config["elasticsearch"]["endpoint"]
@@ -104,8 +105,10 @@ class ElasticSearchNotifier(object):
         yield self.index_doc(self.deploy_end_doc())
 
 
-def enable_elastic_search_notifications(config, event_bus, components, hosts, command_line, word):
-    notifier = ElasticSearchNotifier(config, components, hosts, command_line, word)
+def enable_elastic_search_notifications(config, event_bus, components, hosts,
+                                        command_line, word):
+    notifier = ElasticSearchNotifier(
+        config, components, hosts, command_line, word)
     event_bus.register({
         "deploy.begin": notifier.on_deploy_start,
         "deploy.abort": notifier.on_deploy_abort,

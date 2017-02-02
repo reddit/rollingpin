@@ -44,7 +44,8 @@ class AutoscalerHostSource(HostSource):
             pool = node[0]
 
         try:
-            node = yield self.client.get(posixpath.join(base_path, "local-ipv4"))
+            ipv4 = posixpath.join(base_path, "local-ipv4")
+            node = yield self.client.get(ipv4)
         except zookeeper.NoNodeException:
             address = hostname
         else:
@@ -86,5 +87,8 @@ class AutoscalerHostSource(HostSource):
         except zookeeper.ZooKeeperException as e:
             # fail safe
             logging.warning(
-                "autoscaler: failed to check liveliness for %r: %s", host.name, e)
+                "autoscaler: failed to check liveliness for %r: %s",
+                host.name,
+                e
+            )
             returnValue(True)
