@@ -11,6 +11,7 @@ class HostlistError(Exception):
 
 
 class UnresolvableAliasError(HostlistError):
+
     def __init__(self, glob):
         self.glob = glob
         super(UnresolvableAliasError, self).__init__()
@@ -20,6 +21,7 @@ class UnresolvableAliasError(HostlistError):
 
 
 class UnresolvableHostRefError(HostlistError):
+
     def __init__(self, host_ref):
         self.host_ref = host_ref
         super(UnresolvableHostRefError, self).__init__()

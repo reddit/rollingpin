@@ -4,6 +4,7 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred
 
 
 class EventBus(object):
+
     def __init__(self):
         self.mapping = collections.defaultdict(list)
 

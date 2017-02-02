@@ -48,6 +48,7 @@ COLOR_BY_LOGLEVEL = {
 
 
 class HostFormatter(logging.Formatter):
+
     def __init__(self, longest_hostname):
         self.hostname_format = "[%%%ds] " % (longest_hostname + 2)
         logging.Formatter.__init__(self)
@@ -63,6 +64,7 @@ class HostFormatter(logging.Formatter):
 
 
 class HeadlessFrontend(object):
+
     def __init__(self, event_bus, hosts, verbose_logging):
         longest_hostname = max(len(host.name) for host in hosts)
 
@@ -116,7 +118,7 @@ class HeadlessFrontend(object):
     def on_host_end(self, host):
         if host in self.host_results:
             self.host_results[host] = "success"
-            print colorize("*** %d%% done" % self.percent_complete(), Color.GREEN)
+            print colorize("*** %d%% done" % self.percent_complete(), Color.GREEN)  # noqa
 
     def on_host_abort(self, host, error, should_be_alive):
         if host in self.host_results:
@@ -138,16 +140,16 @@ class HeadlessFrontend(object):
 
         if by_result["warning"]:
             warning_hosts = by_result["warning"]
-            print ("*** encountered errors on %d possibly terminated "
-                   "hosts:" % len(warning_hosts))
+            print("*** encountered errors on %d possibly terminated "
+                  "hosts:" % len(warning_hosts))
             print "      ", " ".join(
                 colorize(host, Color.YELLOW)
                 for host in sorted_nicely(host.name for host in warning_hosts))
 
         if by_result["error"]:
             error_hosts = by_result["error"]
-            print ("*** encountered unexpected errors on %d "
-                   "healthy hosts:" % len(error_hosts))
+            print("*** encountered unexpected errors on %d "
+                  "healthy hosts:" % len(error_hosts))
             print "      ", " ".join(
                 colorize(host, Color.RED)
                 for host in sorted_nicely(host.name for host in error_hosts))
@@ -160,6 +162,7 @@ class HeadlessFrontend(object):
 
 
 class StdioListener(Protocol):
+
     def __init__(self):
         self.character_waiter = Deferred()
         self.old_termio_settings = None
@@ -206,6 +209,7 @@ class StdioListener(Protocol):
 
 
 class HeadfulFrontend(HeadlessFrontend):
+
     def __init__(self, event_bus, hosts, verbose_logging, pause_after):
         HeadlessFrontend.__init__(self, event_bus, hosts, verbose_logging)
 
@@ -266,11 +270,12 @@ class HeadfulFrontend(HeadlessFrontend):
                     continue
 
                 if not (min_percent <= desired_percent <= 100):
-                    print("must be an integer between %d and 100" % min_percent)
+                    print("must be an integer between %d and 100" % min_percent)  # noqa
                     continue
 
                 completed_hosts = self.count_completed_hosts()
-                desired_host_index = int((desired_percent / 100) * self.count_hosts())
+                desired_host_index = int(
+                    (desired_percent / 100) * self.count_hosts())
                 self.pause_after = desired_host_index - completed_hosts
                 break
 

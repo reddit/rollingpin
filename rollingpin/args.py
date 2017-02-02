@@ -5,6 +5,7 @@ PAUSEAFTER_DEFAULT = 1
 
 
 class ExtendList(argparse.Action):
+
     def __call__(self, parser, namespace, values, option_string):
         list_to_extend = getattr(namespace, self.dest)
         list_to_extend.extend(values)
@@ -12,6 +13,7 @@ class ExtendList(argparse.Action):
 
 
 class RestartCommand(ExtendList):
+
     def __call__(self, parser, namespace, values, option_string):
         ExtendList.__call__(
             self, parser, namespace, [["restart", values]], option_string)

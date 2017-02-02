@@ -20,7 +20,8 @@ MAX_PARALLELISM = 50
 
 @contextlib.contextmanager
 def swallow_exceptions(title, log):
-    """Decorator to swallow exception. Used in conjuction with a 'with' statement"""
+    """Decorator to swallow exception. Used in conjuction with
+    a 'with' statement"""
     try:
         yield
     except Exception as e:

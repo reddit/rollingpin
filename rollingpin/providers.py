@@ -2,6 +2,7 @@ import pkg_resources
 
 
 class UnknownProviderError(Exception):
+
     def __init__(self, group, name):
         self.group = group
         self.name = name
