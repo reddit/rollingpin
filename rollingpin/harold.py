@@ -7,7 +7,6 @@ import posixpath
 import urllib
 import urlparse
 
-from .utils import swallow_exceptions
 from twisted.internet import reactor
 from twisted.internet.defer import succeed, inlineCallbacks
 from twisted.web.client import Agent, HTTPConnectionPool
@@ -62,6 +61,15 @@ class HaroldWhisperer(object):
             "X-Hub-Signature": ["sha1=" + body_producer.hash(self.secret)],
         })
         return self.agent.request("POST", url, headers, body_producer)
+
+
+@contextlib.contextmanager
+def swallow_exceptions(log):
+    try:
+        yield
+    except Exception as e:
+        log.warning("harold: %s", e)
+
 
 class HaroldNotifier(object):
     def __init__(self, harold, event_bus, word, hosts, command_line, log_path):
