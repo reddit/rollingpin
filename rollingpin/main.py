@@ -167,7 +167,7 @@ def _main(reactor, *raw_args):
         enable_graphite_notifications(config, event_bus, args.components)
 
     if config["elasticsearch"]["endpoint"]:
-        enable_elastic_search_notifications(config, event_bus, args.components)
+        enable_elastic_search_notifications(config, event_bus, args.components, hosts, args.original, word)
 
     if os.isatty(sys.stdout.fileno()):
         HeadfulFrontend(event_bus, hosts, args.verbose_logging, args.pause_after)
