@@ -63,10 +63,10 @@ class ElasticSearchNotifier(object):
             )
 
     def deploy_start_doc(self):
-        now = int(time.time())
+        timestamp_in_milliseconds = int(time.time()) * 1000
         return {
             'id': self.deploy_name,
-            'timestamp': now,
+            'timestamp': timestamp_in_milliseconds,
             'components': self.components,
             'deployer': getpass.getuser(),
             'command': self.command_line,
@@ -76,19 +76,21 @@ class ElasticSearchNotifier(object):
         }
 
     def deploy_abort_doc(self, reason):
-        now = int(time.time())
+        timestamp_in_milliseconds = int(time.time()) * 1000
         return {
             'id': self.deploy_name,
-            'timestamp': now,
+            'timestamp': timestamp_in_milliseconds,
             'reason': reason,
+            'components': self.components,
             'event_type': 'deploy.abort',
         }
 
     def deploy_end_doc(self):
-        now = int(time.time())
+        timestamp_in_milliseconds = int(time.time()) * 1000
         return {
             'id': self.deploy_name,
-            'timestamp': now,
+            'timestamp': timestamp_in_milliseconds,
+            'components': self.components,
             'event_type': 'deploy.end',
         }
 

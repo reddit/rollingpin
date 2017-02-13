@@ -51,7 +51,7 @@ class TestElasticSearchNotifier(unittest.TestCase):
             'event_type': 'deploy.begin',
             'components': self.components,
             'deployer': deployer,
-            'timestamp': 1,
+            'timestamp': 1000,
             'id': self.deploy_word
         }
         self.assertEquals(deploy_start_doc, expected_deploy_start_doc)
@@ -60,8 +60,9 @@ class TestElasticSearchNotifier(unittest.TestCase):
         reason = "farrabbitssss"
         deploy_abort_doc = self.es_notifier.deploy_abort_doc(reason)
         expected_deploy_abort_doc = {
-            'timestamp': 1,
+            'timestamp': 1000,
             'reason': 'farrabbitssss',
+            'components': self.components,
             'id': self.deploy_word,
             'event_type': 'deploy.abort'
         }
@@ -70,7 +71,8 @@ class TestElasticSearchNotifier(unittest.TestCase):
     def test_deploy_end_doc(self):
         deploy_end_doc = self.es_notifier.deploy_end_doc()
         expected_deploy_end_doc = {
-            'timestamp': 1,
+            'timestamp': 1000,
+            'components': self.components,
             'id': self.deploy_word,
             'event_type': 'deploy.end'
         }
