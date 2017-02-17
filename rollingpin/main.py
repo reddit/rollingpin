@@ -1,6 +1,7 @@
 import ConfigParser
 import os
 import sys
+import warnings
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import react
@@ -141,6 +142,11 @@ def _select_hosts(config, args):
 
 @inlineCallbacks
 def _main(reactor, *raw_args):
+    # the crypto library now raises warnings about how twisted uses CTR mode on
+    # the cypher used for SSH connections. we don't care and can't do anything
+    # about it for now.
+    warnings.simplefilter("ignore")
+
     config = _load_configuration()
     args = _parse_args(config, raw_args)
     hosts = yield _select_hosts(config, args)
