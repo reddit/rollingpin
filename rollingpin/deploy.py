@@ -130,6 +130,7 @@ class Deployer(object):
                     code_host = Host.from_hostname(self.code_host)
                     (sync,) = yield self.process_host(
                         code_host, [sync_command])
+                    yield self.event_bus.trigger("build.sync", sync_info=sync)
 
                     # this is where we build up the final deploy command
                     # resulting from all our syncing and building
