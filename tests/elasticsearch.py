@@ -40,6 +40,22 @@ class TestElasticSearchNotifier(unittest.TestCase):
         self.assertEquals(header_list, [{'User-Agent': ['rollingpin']}])
         self.assertEquals(body.getBody(), json.dumps(doc))
 
+    def test_build_sync_doc(self):
+        sync_info = {
+            'foo': {'token': 'aaaaaaa'},
+            'bar': {'token': 'bbbbbbb'},
+        }
+        build_sync_doc = self.es_notifier.build_sync_doc(sync_info)
+        expected_build_sync_doc = {
+            'timestamps': {
+                'build': {
+                    'sync': 1000,
+                },
+            },
+            'sync_targets': 'foo@aaaaaaa, bar@bbbbbbb',
+        }
+        self.assertEquals(build_sync_doc, expected_build_sync_doc)
+
     def test_deploy_start_doc(self):
         deployer = "mr_cool_guy"
         with patch('getpass.getuser', MagicMock(return_value=deployer)):
