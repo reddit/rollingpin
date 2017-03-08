@@ -155,18 +155,14 @@ class ElasticSearchNotifier(object):
 
     @inlineCallbacks
     def on_deploy_start(self):
-
         # Store the initial document's ID so we can update it with additional
         # metadata later in the deploy process.
-        def store_deploy_annotation_id(body):
-            if response.code != 201:
-                self.logger.error('Could not store deploy metadata.  '
-                                  'Got response %s', body)
-            self.deploy_annotation_id = json.loads(body).get('_id', '')
-
         response = yield self.index_doc(self.deploy_start_doc())
-        d = readBody(response)
-        d.addCallback(store_deploy_annotation_id)
+        body = yield readBody(response)
+        if response.code != 201:
+            self.logger.error('Could not store deploy metadata.  '
+                              'Got response %s', body)
+        self.deploy_annotation_id = json.loads(body).get('_id', '')
 
     @inlineCallbacks
     def on_deploy_abort(self, reason):
