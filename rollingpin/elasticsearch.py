@@ -47,26 +47,20 @@ class ElasticSearchNotifier(object):
         self.endpoint = "https://%s/%s/%s" % (base_url, index, index_type)
         self.components = components
 
-    def index_doc(self, doc, cb=None):
+    def index_doc(self, doc):
         """ Index a document in Elasticsearch
         :param doc: dictionary with data to index in ES
-        :param cb: an optional callback that will be added to the
-            ``Agent.request`` deferred.  Will be called with an instance of
-            ``twisted.web.client.Response`` as the first argument.
         :return: Deferred
         """
         with swallow_exceptions("elasticsearch", self.logger):
             agent = Agent(reactor)
             body = JSONBodyProducer(json.dumps(doc))
-            d = agent.request(
+            return agent.request(
                 'POST',
                 self.endpoint,
                 Headers({'User-Agent': ['rollingpin']}),
                 body,
             )
-            if cb:
-                d.addCallback(cb)
-            return d
 
     def update_doc(self, id_, updated_fields):
         """ Update a document in Elasticsearch
@@ -164,17 +158,15 @@ class ElasticSearchNotifier(object):
 
         # Store the initial document's ID so we can update it with additional
         # metadata later in the deploy process.
-        def read_response(response):
-            def store_deploy_annotation_id(body):
-                if response.code != 201:
-                    self.logger.error('Could not store deploy metadata.  '
-                                      'Got response %s', body)
-                self.deploy_annotation_id = json.loads(body).get('_id', '')
-            d = readBody(response)
-            d.addCallback(store_deploy_annotation_id)
-            return d
+        def store_deploy_annotation_id(body):
+            if response.code != 201:
+                self.logger.error('Could not store deploy metadata.  '
+                                  'Got response %s', body)
+            self.deploy_annotation_id = json.loads(body).get('_id', '')
 
-        yield self.index_doc(self.deploy_start_doc(), cb=read_response)
+        response = yield self.index_doc(self.deploy_start_doc())
+        d = readBody(response)
+        d.addCallback(store_deploy_annotation_id)
 
     @inlineCallbacks
     def on_deploy_abort(self, reason):
