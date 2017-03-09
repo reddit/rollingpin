@@ -47,11 +47,6 @@ class TestElasticSearchNotifier(unittest.TestCase):
         }
         build_sync_doc = self.es_notifier.build_sync_doc(sync_info)
         expected_build_sync_doc = {
-            'timestamps': {
-                'build': {
-                    'sync': 1000,
-                },
-            },
             'sync_targets': 'foo@aaaaaaa, bar@bbbbbbb',
         }
         self.assertEquals(build_sync_doc, expected_build_sync_doc)
