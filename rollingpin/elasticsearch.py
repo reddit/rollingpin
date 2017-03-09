@@ -88,8 +88,6 @@ class ElasticSearchNotifier(object):
             )
 
     def build_sync_doc(self, sync_info):
-        timestamp_in_milliseconds = int(time.time()) * 1000
-
         # We aren't aware of the commit ID that is being deployed at initial
         # deploy time.  Once the build sync has happened, we have this
         # information, so we go back and update the original document with a
@@ -97,11 +95,6 @@ class ElasticSearchNotifier(object):
         sync = ["%s@%s" % (k, v.get('token', '')[:7])
                 for k, v in sync_info.iteritems()]
         return {
-            'timestamps': {
-                'build': {
-                    'sync': timestamp_in_milliseconds,
-                },
-            },
             'sync_targets': ', '.join(sync),
         }
 
@@ -109,49 +102,38 @@ class ElasticSearchNotifier(object):
         timestamp_in_milliseconds = int(time.time()) * 1000
         return {
             'id': self.deploy_name,
-
-            # Once we change the mapping and reindex the data we can remove
-            # this redundant timestamp field.
             'timestamp': timestamp_in_milliseconds,
-
-            'timestamps': {
-                'deploy': {
-                    'start': timestamp_in_milliseconds,
-                },
-            },
             'components': self.components,
             'deployer': getpass.getuser(),
             'command': self.command_line,
             'hosts': self.hosts,
             'host_count': len(self.hosts),
+            'event_type': 'deploy.begin',
         }
 
     def deploy_abort_doc(self, reason):
         timestamp_in_milliseconds = int(time.time()) * 1000
         return {
-            'timestamps': {
-                'deploy': {
-                    'abort': timestamp_in_milliseconds,
-                },
-            },
-            'abort_reason': reason,
+            'id': self.deploy_name,
+            'timestamp': timestamp_in_milliseconds,
+            'reason': reason,
+            'components': self.components,
+            'event_type': 'deploy.abort',
         }
 
     def deploy_end_doc(self):
         timestamp_in_milliseconds = int(time.time()) * 1000
         return {
-            'timestamps': {
-                'deploy': {
-                    'end': timestamp_in_milliseconds,
-                },
-            },
+            'id': self.deploy_name,
+            'timestamp': timestamp_in_milliseconds,
+            'components': self.components,
+            'event_type': 'deploy.end',
         }
 
     @inlineCallbacks
     def on_build_sync(self, sync_info):
-        if self.deploy_annotation_id:
-            yield self.update_doc(self.deploy_annotation_id,
-                                  self.build_sync_doc(sync_info))
+        yield self.update_doc(self.deploy_annotation_id,
+                              self.build_sync_doc(sync_info))
 
     @inlineCallbacks
     def on_deploy_start(self):
@@ -166,15 +148,11 @@ class ElasticSearchNotifier(object):
 
     @inlineCallbacks
     def on_deploy_abort(self, reason):
-        if self.deploy_annotation_id:
-            yield self.update_doc(self.deploy_annotation_id,
-                                  self.deploy_abort_doc(reason))
+        yield self.index_doc(self.deploy_abort_doc(reason))
 
     @inlineCallbacks
     def on_deploy_end(self):
-        if self.deploy_annotation_id:
-            yield self.update_doc(self.deploy_annotation_id,
-                                  self.deploy_end_doc())
+        yield self.index_doc(self.deploy_end_doc())
 
 
 def enable_elastic_search_notifications(config, event_bus, components, hosts,
