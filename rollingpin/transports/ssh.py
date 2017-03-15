@@ -27,6 +27,7 @@ from ..transports import (
     TransportError,
     CommandFailed,
     ConnectionError,
+    ExecutionTimeout,
 )
 
 
@@ -182,16 +183,26 @@ class SignalError(CommandFailed):
 class _CommandChannel(SSHChannel):
     name = "session"
 
-    def __init__(self, log, command, *args, **kwargs):
+    def __init__(self, log, command, timeout, *args, **kwargs):
+        """
+        :param timeout: command timeout in seconds.  0 for no timeout
+        """
         self.log = log
         self.command = command
         self.finished = Deferred()
         self.result = StringIO.StringIO()
         self.reason = None
+        self.timeout = timeout
 
         SSHChannel.__init__(self, *args, **kwargs)
 
+    def _execution_timeout(self):
+        if not self.finished.called:
+            self.finished.errback(ExecutionTimeout(self.command))
+
     def channelOpen(self, data):
+        if self.timeout:
+            reactor.callLater(self.timeout, self._execution_timeout)
         command = self.command.encode("utf-8")
         self.conn.sendRequest(self, "exec", NS(command), wantReply=1)
 
@@ -235,12 +246,12 @@ class SshTransportConnection(TransportConnection):
         self.connection = connection
 
     @inlineCallbacks
-    def execute(self, log, command):
+    def execute(self, log, command, timeout=0):
         args = " ".join(pipes.quote(part) for part in command)
         command = "sudo %s %s" % (self.command_binary, args)
 
         channel = _CommandChannel(
-            log, command, conn=self.connection)
+            log, command, conn=self.connection, timeout=timeout)
         self.connection.openChannel(channel)
         result = yield channel.finished
         returnValue(result)

@@ -39,6 +39,7 @@ CONFIG_SPEC = {
         "code-host": Option(str),
         "default-sleeptime": Option(int),
         "default-parallel": Option(int),
+        "execution-timeout": Option(int, default=0),
     },
 
     "harold": OptionalSection({

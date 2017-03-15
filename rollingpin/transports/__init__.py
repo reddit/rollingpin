@@ -6,6 +6,16 @@ class ConnectionError(TransportError):
     pass
 
 
+class ExecutionTimeout(TransportError):
+
+    def __init__(self, command):
+        self.command = command
+        super(ExecutionTimeout, self).__init__()
+
+    def __str__(self):
+        return "Timed out executing command %r" % (self.command)
+
+
 class Transport(object):
     def initialize(self):
         pass
