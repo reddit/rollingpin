@@ -188,7 +188,8 @@ def _main(reactor, *raw_args):
         for host in hosts:
             print host.name
     else:
-        deployer = Deployer(config, event_bus, args.parallel, args.sleeptime)
+        deployer = Deployer(config, event_bus, args.parallel,
+                            args.sleeptime, args.timeout)
 
         try:
             yield deployer.run_deploy(hosts, args.components, args.commands)

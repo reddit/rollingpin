@@ -53,14 +53,21 @@ class ComponentNotBuiltError(DeployError):
 
 class Deployer(object):
 
-    def __init__(self, config, event_bus, parallel, sleeptime):
+    def __init__(self, config, event_bus, parallel, sleeptime, timeout=None):
+        """
+        :param timeout: optional command execution timeout that will override
+            the configuration's specified timeout
+        """
         self.log = logging.getLogger(__name__)
         self.host_source = config["hostsource"]
         self.transport = config["transport"]
         self.event_bus = event_bus
         self.parallel = parallel
         self.code_host = config["deploy"]["code-host"]
-        self.execution_timeout = config["deploy"]["execution-timeout"]
+        if timeout is not None:
+            self.execution_timeout = timeout
+        else:
+            self.execution_timeout = config["deploy"]["execution-timeout"]
         self.sleeptime = sleeptime
 
     @inlineCallbacks
