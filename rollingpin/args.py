@@ -81,11 +81,13 @@ def _add_iteration_arguments(config, parser):
         dest="pause_after",
     )
 
+    timeout_default = config["deploy"]["execution-timeout"]
     iteration_group.add_argument(
         "--timeout",
-        default=None,
+        default=timeout_default,
         type=int,
-        help="command execution timeout config override (0 for no timeout)",
+        help="command execution timeout config override "
+             "(default: {}, 0 for no timeout)".format(timeout_default),
         metavar="SECONDS",
         dest="timeout",
     )
