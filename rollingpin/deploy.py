@@ -12,7 +12,7 @@ from twisted.internet.defer import (
 )
 
 from .hostsources import Host
-from .transports import TransportError
+from .transports import TransportError, ExecutionTimeout
 from .utils import sleep
 
 
@@ -53,17 +53,21 @@ class ComponentNotBuiltError(DeployError):
 
 class Deployer(object):
 
-    def __init__(self, config, event_bus, parallel, sleeptime):
+    def __init__(self, config, event_bus, parallel, sleeptime, timeout):
+        """
+        :param timeout: command execution timeout
+        """
         self.log = logging.getLogger(__name__)
         self.host_source = config["hostsource"]
         self.transport = config["transport"]
         self.event_bus = event_bus
         self.parallel = parallel
         self.code_host = config["deploy"]["code-host"]
+        self.execution_timeout = timeout
         self.sleeptime = sleeptime
 
     @inlineCallbacks
-    def process_host(self, host, commands):
+    def process_host(self, host, commands, timeout=0):
         log = logging.LoggerAdapter(self.log, {"host": host.name})
 
         yield self.event_bus.trigger("host.begin", host=host)
@@ -77,7 +81,7 @@ class Deployer(object):
                 log.info(" ".join(command))
                 yield self.event_bus.trigger(
                     "host.command", host=host, command=command)
-                result = yield connection.execute(log, command)
+                result = yield connection.execute(log, command, timeout)
                 results.append(result)
             yield connection.disconnect()
         except TransportError as e:
@@ -188,7 +192,8 @@ class Deployer(object):
                     first_host = False
 
                 deferred = parallelism_limiter.run(
-                    self.process_host, host, commands)
+                    self.process_host, host, commands,
+                    timeout=self.execution_timeout)
                 deferred.addErrback(self.on_host_error)
                 host_deploys.append(deferred)
 

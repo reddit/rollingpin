@@ -81,6 +81,17 @@ def _add_iteration_arguments(config, parser):
         dest="pause_after",
     )
 
+    timeout_default = config["deploy"]["execution-timeout"]
+    iteration_group.add_argument(
+        "--timeout",
+        default=timeout_default,
+        type=int,
+        help="command execution timeout config override "
+             "(default: {}, 0 for no timeout)".format(timeout_default),
+        metavar="SECONDS",
+        dest="timeout",
+    )
+
 
 def _add_flags(config, parser):
     options_group = parser.add_argument_group("options")
@@ -197,6 +208,9 @@ def construct_canonical_commandline(config, args):
 
     if args.pause_after != PAUSEAFTER_DEFAULT:
         arg_list.append("--pauseafter=%d" % args.pause_after)
+
+    if args.timeout is not None:
+        arg_list.append("--timeout=%d" % args.timeout)
 
     if config["harold"]["base-url"] and not args.notify_harold:
         arg_list.append("--no-harold")
