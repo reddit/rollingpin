@@ -15,11 +15,13 @@ from tests import make_configparser
 
 
 class MockHost(object):
+
     def __init__(self, name):
         self.name = name
 
 
 class TestAliasParsing(unittest.TestCase):
+
     def test_no_section(self):
         empty_parser = ConfigParser.ConfigParser()
         aliases = parse_aliases(empty_parser)
@@ -37,10 +39,12 @@ class TestAliasParsing(unittest.TestCase):
         second = none
         """)
         aliases = parse_aliases(parser)
-        self.assertEqual(aliases, {"first": ["app-*", "job-*"], "second": ["none"]})
+        self.assertEqual(
+            aliases, {"first": ["app-*", "job-*"], "second": ["none"]})
 
 
 class TestAliasResolution(unittest.TestCase):
+
     def test_resolve_nothing(self):
         aliases = resolve_aliases({}, [])
         self.assertEqual(aliases, {})
@@ -61,6 +65,7 @@ class TestAliasResolution(unittest.TestCase):
 
 
 class TestHostListResolution(unittest.TestCase):
+
     def test_empty(self):
         hostlist = resolve_hostlist([], [], {})
         self.assertEqual(hostlist, [])
@@ -81,6 +86,7 @@ class TestHostListResolution(unittest.TestCase):
 
 
 class TestHostListRestriction(unittest.TestCase):
+
     def setUp(self):
         self.hostlist = map(MockHost, ["a", "b", "c", "d", "e", "f"])
 
