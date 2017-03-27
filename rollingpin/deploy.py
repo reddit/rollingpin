@@ -56,9 +56,16 @@ DeployResult = collections.namedtuple('DeployResult', ['command', 'result'])
 
 class Deployer(object):
 
-    def __init__(self, config, event_bus, parallel, sleeptime, timeout):
+    def __init__(self, config, event_bus, parallel,
+                 sleeptime, timeout, dangerously_fast):
         """
-        :param timeout: command execution timeout
+        :param dict config:
+        :param EventBus event_bus:
+        :param int parallel: number of hosts to process in parallel
+        :param float sleeptime: sleep time between hosts
+        :param int timeout: command execution timeout
+        :param bool dangerously_fast: flag to ignore wait for reloads
+
         """
         self.log = logging.getLogger(__name__)
         self.host_source = config["hostsource"]
@@ -68,6 +75,7 @@ class Deployer(object):
         self.code_host = config["deploy"]["code-host"]
         self.execution_timeout = timeout
         self.sleeptime = sleeptime
+        self.dangerously_fast = dangerously_fast
 
     @inlineCallbacks
     def process_host(self, host, commands, timeout=0):
@@ -175,6 +183,15 @@ class Deployer(object):
                             except KeyError:
                                 raise ComponentNotBuiltError(component)
                             deploy_command.append(deploy_ref)
+
+                    # Wait until components report ready IF:
+                    # * we are actually restarting a component
+                    # * we aren't going --dangerously-fast
+                    restarting_component = any(
+                        ["restart" in val for val in commands])
+                    if restarting_component and not self.dangerously_fast:
+                        commands.append(["wait-until-components-ready"])
+
                 except Exception:
                     traceback.print_exc()
                     raise DeployError("unexpected error in sync/build")

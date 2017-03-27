@@ -25,7 +25,7 @@ class TestElasticSearchNotifier(unittest.TestCase):
             self.components,
             self.hosts,
             self.command,
-            self.deploy_word
+            self.deploy_word,
         ]
         self.es_notifier = ElasticSearchNotifier(*self.es_notifier_args)
 
