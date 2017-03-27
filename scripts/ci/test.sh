@@ -8,7 +8,7 @@ failure=$?
 coverage run setup.py test
 failure=$(( $failure || $? ))
 
-coverage report --fail-under=23 `find rollingpin -name "*.py"`
+coverage report --fail-under=28 `find rollingpin -name "*.py"`
 failure=$(( $failure || $? ))
 
 exit $failure

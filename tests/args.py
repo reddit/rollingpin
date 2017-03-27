@@ -108,6 +108,15 @@ class TestArgumentParsing(unittest.TestCase):
         args = self.parser.parse_args(["-h", "a", "--verbose"])
         self.assertTrue(args.verbose_logging)
 
+    # --dangerously-fast
+    def test_dangerously_fast_default(self):
+        args = self.parser.parse_args(["-h", "a"])
+        self.assertFalse(args.dangerously_fast)
+
+    def test_dangerously_fast_on(self):
+        args = self.parser.parse_args(["-h", "a", "--dangerously-fast"])
+        self.assertTrue(args.dangerously_fast)
+
     # -d
     def test_empty_deploys(self):
         args = self.parser.parse_args(["-h", "a"])

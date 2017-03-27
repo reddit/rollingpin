@@ -110,6 +110,16 @@ def _add_flags(config, parser):
         dest="list_hosts",
     )
 
+    options_group.add_argument(
+        "--dangerously-fast",
+        action="store_true",
+        default=False,
+        help=("Don't wait on service restarts."
+              "VERY dangerous when combined with a high parallel host count"
+              ),
+        dest="dangerously_fast",
+    )
+
     if config["harold"]["base-url"]:
         options_group.add_argument(
             "--no-harold",
@@ -217,6 +227,9 @@ def construct_canonical_commandline(config, args):
 
     if args.verbose_logging:
         arg_list.append("--verbose")
+
+    if args.dangerously_fast:
+        arg_list.append("--dangerously-fast")
 
     if args.components:
         arg_list.append("-d")
