@@ -4,7 +4,7 @@ import unittest
 from rollingpin.hostlist import (
     HostSelectionError,
     parse_aliases,
-    resolve_aliases,
+    resolve_alias,
     resolve_hostlist,
     restrict_hostlist,
     UnresolvableAliasError,
@@ -42,22 +42,22 @@ class TestAliasParsing(unittest.TestCase):
 
 class TestAliasResolution(unittest.TestCase):
     def test_resolve_nothing(self):
-        aliases = resolve_aliases({}, [])
-        self.assertEqual(aliases, {})
+        aliases = resolve_alias([], [])
+        self.assertEqual(aliases, [])
 
     def test_resolve_direct_names(self):
         b = MockHost("b")
-        aliases = resolve_aliases({"a": ["b"]}, [b])
-        self.assertEqual(aliases, {"a": [b]})
+        hosts = resolve_alias([b], ["b"])
+        self.assertEqual(hosts, [b])
 
     def test_unsatisfied_glob(self):
         with self.assertRaises(UnresolvableAliasError):
-            resolve_aliases({"a": ["b"]}, [])
+            resolve_alias([], ["a"])
 
     def test_glob(self):
         a_1, a_2, b_1 = MockHost("a-1"), MockHost("a-2"), MockHost("b-1")
-        aliases = resolve_aliases({"a": ["a-*"]}, [a_1, a_2, b_1])
-        self.assertEqual(aliases, {"a": [a_1, a_2]})
+        aliases = resolve_alias([a_1, a_2, b_1], ["a-*"])
+        self.assertEqual(aliases, [a_1, a_2])
 
 
 class TestHostListResolution(unittest.TestCase):
@@ -72,12 +72,20 @@ class TestHostListResolution(unittest.TestCase):
 
     def test_aliases(self):
         a, b, c = MockHost("a"), MockHost("b"), MockHost("c")
-        hostlist = resolve_hostlist(["alias"], [a, b, c], {"alias": [a, b]})
+        hostlist = resolve_hostlist(["alias"], [a, b, c], {"alias": ["a", "b"]})
         self.assertEqual(hostlist, [a, b])
 
     def test_unknown_ref(self):
         with self.assertRaises(UnresolvableHostRefError):
             resolve_hostlist(["bad"], [MockHost("a"), MockHost("b")], {})
+
+    def test_bad_unrelated_alias(self):
+        a, b, c = MockHost("a"), MockHost("b"), MockHost("c")
+        hostlist = resolve_hostlist(["good_alias"], [a, b, c], {
+            "good_alias": "a",
+            "bad_alias": "d",
+        })
+        self.assertEqual(hostlist, [a])
 
 
 class TestHostListRestriction(unittest.TestCase):

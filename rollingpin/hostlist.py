@@ -1,4 +1,3 @@
-import collections
 import fnmatch
 import itertools
 
@@ -44,31 +43,25 @@ def parse_aliases(config_parser):
     return aliases
 
 
-def resolve_aliases(unresolved_aliases, all_hosts):
-    aliases = {}
-    for alias, globs in unresolved_aliases.iteritems():
-        hosts = []
+def resolve_alias(all_hosts, globs):
+    hosts = []
 
-        for glob in globs:
-            globbed = [host for host in all_hosts
-                       if fnmatch.fnmatch(host.name, glob)]
-            if not globbed:
-                raise UnresolvableAliasError(glob)
-            hosts.extend(globbed)
-
-        aliases[alias] = hosts
-    return aliases
+    for glob in globs:
+        globbed = [host for host in all_hosts
+                   if fnmatch.fnmatch(host.name, glob)]
+        if not globbed:
+            raise UnresolvableAliasError(glob)
+        hosts.extend(globbed)
+    return hosts
 
 
 def resolve_hostlist(host_refs, all_hosts, aliases):
-    unresolved_refs = collections.deque(host_refs)
     resolved_hosts = []
 
-    while unresolved_refs:
-        ref = unresolved_refs.popleft()
-
+    for ref in host_refs:
         if ref in aliases:
-            resolved_hosts.extend(aliases[ref])
+            hosts = resolve_alias(all_hosts, aliases[ref])
+            resolved_hosts.extend(hosts)
         else:
             matching_hosts = [host for host in all_hosts if host.name == ref]
 
