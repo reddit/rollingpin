@@ -137,8 +137,8 @@ def _select_hosts(config, args):
     hosts = interleaved(all_hosts_unsorted, key=lambda h: h.pool)
 
     try:
-        aliases = resolve_aliases(config["aliases"], hosts)
-        full_hostlist = resolve_hostlist(args.host_refs, hosts, aliases)
+        full_hostlist = resolve_hostlist(
+            args.host_refs, hosts, config["aliases"])
         selected_hosts = restrict_hostlist(
             full_hostlist, args.start_at, args.stop_before)
     except HostlistError as e:
