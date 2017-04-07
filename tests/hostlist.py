@@ -79,6 +79,14 @@ class TestHostListResolution(unittest.TestCase):
         with self.assertRaises(UnresolvableHostRefError):
             resolve_hostlist(["bad"], [MockHost("a"), MockHost("b")], {})
 
+    def test_bad_unrelated_alias(self):
+        a, b, c = MockHost("a"), MockHost("b"), MockHost("c")
+        hostlist = resolve_hostlist(["good_alias"], [a, b, c], {
+            "good_alias": "a",
+            "bad_alias": "d",
+        })
+        self.assertEqual(hostlist, [a])
+
 
 class TestHostListRestriction(unittest.TestCase):
     def setUp(self):
