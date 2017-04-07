@@ -57,12 +57,9 @@ def resolve_alias(all_hosts, globs):
 
 
 def resolve_hostlist(host_refs, all_hosts, aliases):
-    unresolved_refs = collections.deque(host_refs)
     resolved_hosts = []
 
-    while unresolved_refs:
-        ref = unresolved_refs.popleft()
-
+    for ref in host_refs:
         if ref in aliases:
             hosts = resolve_alias(all_hosts, aliases[ref])
             resolved_hosts.extend(hosts)
