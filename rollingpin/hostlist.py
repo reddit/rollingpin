@@ -1,4 +1,3 @@
-import collections
 import fnmatch
 import itertools
 
