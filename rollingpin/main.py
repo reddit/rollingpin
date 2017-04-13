@@ -21,7 +21,6 @@ from .harold import enable_harold_notifications
 from .hostlist import (
     HostlistError,
     parse_aliases,
-    resolve_aliases,
     resolve_hostlist,
     restrict_hostlist,
 )
