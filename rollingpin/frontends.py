@@ -89,6 +89,7 @@ class HeadlessFrontend(object):
         self.start_time = None
 
         event_bus.register({
+            "component_report": self.on_component_report,
             "deploy.begin": self.on_deploy_begin,
             "deploy.end": self.on_deploy_end,
             "deploy.abort": self.on_deploy_abort,
@@ -101,6 +102,15 @@ class HeadlessFrontend(object):
 
     def disable_verbose_logging(self):
         self.log_handler.setLevel(logging.INFO)
+
+    def on_component_report(self, report):
+        # TODO: Make this smarter.  It should only show anomolous
+        # stuff.  Or maybe color that stuff differently.
+        print colorize("*** component report", Color.GREEN)
+        print "COMPONENT\tSHA\tCOUNT"
+        for component in report.keys():
+            for sha, count in report[component].iteritems():
+                print "%s\t%s\t%s" % (component, sha, count)
 
     def on_deploy_begin(self):
         self.start_time = time.time()

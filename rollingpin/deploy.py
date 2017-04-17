@@ -223,19 +223,11 @@ class Deployer(object):
                         # disk?
                         continue
 
-                # TODO: Where should this go?  I'm thinking the information
-                # should be provided to the frontend.
-                #
-                # TODO: Make this smarter.  It should only show anomolous
-                # stuff.  Or maybe color that stuff differently.  But that
-                # should be in frontends.
-                print "----------------"
-                print "component report"
-                print "----------------"
-                print "COMPONENT\tSHA\tCOUNT"
-                for component in report.keys():
-                    for sha, count in report[component].iteritems():
-                        print "%s\t%s\t%s" % (component, sha, count)
+                # TODO: Is there a better way to do this without creating a new
+                # event?  I think it could be passed along with the
+                # "deploy.end" event, but I need a way to get the report back
+                # from the DeferredList callback.
+                self.event_bus.trigger("component_report", report=report)
 
             # Commands are a list of lists.  Each sublist contains the command
             # and any arguments passed to the command.  We just need to figure
