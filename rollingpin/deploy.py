@@ -199,7 +199,56 @@ class Deployer(object):
 
                 yield self.event_bus.trigger(
                     "deploy.enqueue", deploys=host_deploys)
-            yield DeferredList(host_deploys)
+            deferred_list = DeferredList(host_deploys)
+
+            def component_report_cb(deferred_list_results):
+                report = collections.defaultdict(lambda: collections.Counter())
+                for host_deploy_result in deferred_list_results:
+                    # TODO: Document what this output should look like to work
+                    # properly.  I think it should probably go elsewhere.
+                    success, command_outputs = host_deploy_result
+                    if not success:
+                        continue
+                    try:
+                        # Multiple commands' outputs can end up here.  Right
+                        # now we just try to optimistically process it as a
+                        # component report, but this makes it more difficult /
+                        # impossible to distinguish between actual errors below.
+                        for command_output in command_outputs:
+                            components = command_output['components']
+                            for component, sha in components.iteritems():
+                                report[component][sha] += 1
+                    except:
+                        # TODO: Report errors?  Log exceptions to
+                        # disk?
+                        continue
+
+                # TODO: Where should this go?  I'm thinking the information
+                # should be provided to the frontend.
+                #
+                # TODO: Make this smarter.  It should only show anomolous
+                # stuff.  Or maybe color that stuff differently.  But that
+                # should be in frontends.
+                print "----------------"
+                print "component report"
+                print "----------------"
+                print "COMPONENT\tSHA\tCOUNT"
+                for component in report.keys():
+                    for sha, count in report[component].iteritems():
+                        print "%s\t%s\t%s" % (component, sha, count)
+
+            # Commands are a list of lists.  Each sublist contains the command
+            # and any arguments passed to the command.  We just need to figure
+            # out whether the user has requested a component report.
+            for command in commands:
+                try:
+                    if command[0] == 'component_report':
+                        deferred_list.addCallback(component_report_cb)
+                        break
+                except IndexError:
+                    continue
+
+            yield deferred_list
         except (DeployError, AbortDeploy, TransportError) as e:
             yield self.abort(str(e))
         else:
