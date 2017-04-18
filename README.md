@@ -95,3 +95,25 @@ docker build . -t rollingpin:test && docker run --rm rollingpin:test
 
 [1]: http://i.imgur.com/66Nr9Wo.jpg
 [2]: https://github.com/spladug/harold
+
+Deploy Commands
+-----
+While any arbitrary command can be supported by your deploy script,
+there are a few that rollingpin has special support for.
+
+### build ###
+
+If `build-host` is present in the root directory of your project, rollingpin
+will attempt to connect to that host and run the following:
+
+    deploy-script build foo@01234567 bar@abcdef
+
+Where each argument passed is the name of a deploy target and the sha that
+will be deployed.  The build command in your deploy script should take these
+arguments, do whatever building is necessary, and return a result in the
+format:
+
+    {
+        'foo@012345': '012345',
+        'bar@abcdef': 'abcdef',
+    }
