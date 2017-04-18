@@ -82,7 +82,7 @@ class Deployer(object):
                 yield self.event_bus.trigger(
                     "host.command", host=host, command=command)
                 result = yield connection.execute(log, command, timeout)
-                results.append(result)
+                results.append((command, result))
             yield connection.disconnect()
         except TransportError as e:
             should_be_alive = yield self.host_source.should_be_alive(host)
@@ -97,7 +97,8 @@ class Deployer(object):
             raise HostDeployError(host, e)
         else:
             log.info("success! all done")
-            yield self.event_bus.trigger("host.end", host=host)
+            yield self.event_bus.trigger(
+                "host.end", host=host, results=results)
 
         returnValue(results)
 
@@ -132,9 +133,11 @@ class Deployer(object):
                     # component
                     sync_command = ["synchronize"] + components
                     code_host = Host.from_hostname(self.code_host)
-                    (sync,) = yield self.process_host(
+                    (results,) = yield self.process_host(
                         code_host, [sync_command])
-                    yield self.event_bus.trigger("build.sync", sync_info=sync)
+                    command, sync_result = results
+                    yield self.event_bus.trigger("build.sync",
+                                                 sync_info=sync_result)
 
                     # this is where we build up the final deploy command
                     # resulting from all our syncing and building
@@ -142,7 +145,7 @@ class Deployer(object):
 
                     # collect the results of the sync per-buildhost
                     by_buildhost = collections.defaultdict(list)
-                    for component, sync_info in sync.iteritems():
+                    for component, sync_info in sync_result.iteritems():
                         component_ref = component + "@" + sync_info["token"]
 
                         build_host = sync_info.get("buildhost", None)
@@ -158,8 +161,9 @@ class Deployer(object):
                     for build_hostname, build_refs in by_buildhost.iteritems():
                         build_command = ["build"] + build_refs
                         build_host = Host.from_hostname(build_hostname)
-                        (tokens,) = yield self.process_host(
+                        (results,) = yield self.process_host(
                             build_host, [build_command])
+                        command, tokens = results
 
                         for ref in build_refs:
                             component, at, sync_token = ref.partition("@")
@@ -199,48 +203,7 @@ class Deployer(object):
 
                 yield self.event_bus.trigger(
                     "deploy.enqueue", deploys=host_deploys)
-            deferred_list = DeferredList(host_deploys)
-
-            def component_report_cb(deferred_list_results):
-                report = collections.defaultdict(lambda: collections.Counter())
-                for host_deploy_result in deferred_list_results:
-                    # TODO: Document what this output should look like to work
-                    # properly.  I think it should probably go elsewhere.
-                    success, command_outputs = host_deploy_result
-                    if not success:
-                        continue
-                    try:
-                        # Multiple commands' outputs can end up here.  Right
-                        # now we just try to optimistically process it as a
-                        # component report, but this makes it more difficult /
-                        # impossible to distinguish between actual errors below.
-                        for command_output in command_outputs:
-                            components = command_output['components']
-                            for component, sha in components.iteritems():
-                                report[component][sha] += 1
-                    except:
-                        # TODO: Report errors?  Log exceptions to
-                        # disk?
-                        continue
-
-                # TODO: Is there a better way to do this without creating a new
-                # event?  I think it could be passed along with the
-                # "deploy.end" event, but I need a way to get the report back
-                # from the DeferredList callback.
-                self.event_bus.trigger("component_report", report=report)
-
-            # Commands are a list of lists.  Each sublist contains the command
-            # and any arguments passed to the command.  We just need to figure
-            # out whether the user has requested a component report.
-            for command in commands:
-                try:
-                    if command[0] == 'component_report':
-                        deferred_list.addCallback(component_report_cb)
-                        break
-                except IndexError:
-                    continue
-
-            yield deferred_list
+            yield DeferredList(host_deploys)
         except (DeployError, AbortDeploy, TransportError) as e:
             yield self.abort(str(e))
         else:

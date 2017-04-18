@@ -85,11 +85,10 @@ class HeadlessFrontend(object):
         root = logging.getLogger()
         root.addHandler(self.log_handler)
 
-        self.host_results = dict.fromkeys(hosts, None)
+        self.host_results = dict.fromkeys(hosts, {})
         self.start_time = None
 
         event_bus.register({
-            "component_report": self.on_component_report,
             "deploy.begin": self.on_deploy_begin,
             "deploy.end": self.on_deploy_end,
             "deploy.abort": self.on_deploy_abort,
@@ -102,15 +101,6 @@ class HeadlessFrontend(object):
 
     def disable_verbose_logging(self):
         self.log_handler.setLevel(logging.INFO)
-
-    def on_component_report(self, report):
-        # TODO: Make this smarter.  It should only show anomolous
-        # stuff.  Or maybe color that stuff differently.
-        print colorize("*** component report", Color.GREEN)
-        print "COMPONENT\tSHA\tCOUNT"
-        for component in report.keys():
-            for sha, count in report[component].iteritems():
-                print "%s\t%s\t%s" % (component, sha, count)
 
     def on_deploy_begin(self):
         self.start_time = time.time()
@@ -125,17 +115,18 @@ class HeadlessFrontend(object):
     def percent_complete(self):
         return (self.count_completed_hosts() / self.count_hosts()) * 100
 
-    def on_host_end(self, host):
+    def on_host_end(self, host, results):
         if host in self.host_results:
-            self.host_results[host] = "success"
+            self.host_results[host]['status'] = "success"
+            self.host_results[host]['results'] = results
             print colorize("*** %d%% done" % self.percent_complete(), Color.GREEN)  # noqa
 
     def on_host_abort(self, host, error, should_be_alive):
         if host in self.host_results:
             if should_be_alive:
-                self.host_results[host] = "error"
+                self.host_results[host]['status'] = "error"
             else:
-                self.host_results[host] = "warning"
+                self.host_results[host]['status'] = "warning"
 
     def on_deploy_abort(self, reason):
         print colorize(
@@ -144,7 +135,7 @@ class HeadlessFrontend(object):
     def on_deploy_end(self):
         by_result = collections.defaultdict(list)
         for host, result in self.host_results.iteritems():
-            by_result[result].append(host)
+            by_result[result['status']].append(host)
 
         print colorize("*** deploy complete!", Color.BOLD(Color.GREEN))
 
@@ -169,6 +160,28 @@ class HeadlessFrontend(object):
 
         elapsed = time.time() - self.start_time
         print "*** elapsed time: %d seconds" % elapsed
+
+        # TODO: Make this smarter.  It should only show anomolous
+        # stuff.  Or maybe color that stuff differently.
+        #
+        # TODO: Check if component report was even requested before going
+        # through them all?
+        report = collections.defaultdict(lambda: collections.Counter())
+        for host, results in self.host_results.iteritems():
+            # Messed up hosts won't have results
+            if 'results' not in results:
+                continue
+            for command, output in results['results']:
+                if command[0] != 'component_report':
+                    continue
+                for component, sha in output['components'].iteritems():
+                    report[component][sha] += 1
+        if report:
+            print colorize("*** component report", Color.BOLD(Color.GREEN))
+            print "COMPONENT\tSHA\tCOUNT"
+            for component in report.keys():
+                for sha, count in report[component].iteritems():
+                    print "%s\t%s\t%s" % (component, sha, count)
 
 
 class StdioListener(Protocol):
