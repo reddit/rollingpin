@@ -85,7 +85,7 @@ class HeadlessFrontend(object):
         root = logging.getLogger()
         root.addHandler(self.log_handler)
 
-        self.host_results = dict.fromkeys(hosts, {})
+        self.host_results = {k: {} for k in hosts}
         self.start_time = None
 
         event_bus.register({
