@@ -103,12 +103,12 @@ there are a few that rollingpin has special support for.
 
 ### build ###
 
-If `build-host` is present in the root directory of your project, rollingpin
+If ``build-host`` is present in the root directory of your project, rollingpin
 will attempt to connect to that host and run the following:
 
     deploy-script build foo@01234567 bar@abcdef
 
-Where each argument passed is the name of a deploy target and the sha that
+Where each argument passed is the name of a deploy target and the SHA that
 will be deployed.  The build command in your deploy script should take these
 arguments, do whatever building is necessary, and return a result in the
 format:
@@ -117,3 +117,32 @@ format:
         'foo@012345': '012345',
         'bar@abcdef': 'abcdef',
     }
+
+### component_report ###
+
+The ``component_report`` command collects information about the SHA of each
+running process across all target hosts.  It can be used to identify hanging
+processes.  A summary report will be a printed to stdout, in the format:
+
+    *** component report
+    COMPONENT      SHA     COUNT
+    foo         012345      1
+    bar         abcdef      1
+
+To support this functionality, the ``component_report`` in your deploy script
+should return a result containing all running SHAs of all components on the
+host, in the format:
+
+    {
+        'components': {
+            'foo': '012345',
+            'bar': 'abcdef',
+        }
+    }
+
+The ``component_report`` in your deploy script should also print more detailed
+information to **stderr** to allow an operator to dig in further if a problem is
+found.  The suggested format of this output:
+
+    component: app-123 foo@012345
+    component: app-123 bar@abcdef
