@@ -163,10 +163,7 @@ class HeadlessFrontend(object):
 
         report = collections.defaultdict(collections.Counter)
         for host, results in self.host_results.iteritems():
-            # Messed up hosts won't have results
-            if 'results' not in results:
-                continue
-            for command, output in results['results']:
+            for command, output in results.get('results', []):
                 if command[0] != 'components':
                     continue
                 for component, sha in output['components'].iteritems():
