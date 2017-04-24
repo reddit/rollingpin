@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import json
 import os
+import socket
 import subprocess
 import sys
 
@@ -102,6 +103,48 @@ def deploy(*components_with_tokens):
         assert sep == "@"
 
         # TODO: put your deploy logic here!
+
+
+def component_report():
+    """Collect information about the SHA of each running process.
+
+    This can be used to identify hanging processes.  A summary report will be
+    a printed to stdout, in the format:
+
+        *** component report
+        COMPONENT      SHA     COUNT
+        foo         012345      1
+        bar         abcdef      1
+
+    To support this functionality, the `component_report` command should
+    return a result containing all running SHAs of all components on the
+    host, in the format:
+
+        {
+            'components': {
+                'foo': '012345',
+                'bar': 'abcdef',
+            }
+        }
+
+    The `component_report` command should also print more detailed
+    information to stderr to allow an operator to dig in further if a
+    problem is found.  The suggested format of this output:
+
+        component: app-123 foo@012345
+        component: app-123 bar@abcdef
+
+    """
+    components = {
+        'components': {
+            'foo': '012345',
+        },
+    }
+    hostname = socket.gethostname()
+    for component, commit_hash in components['components'].iteritems():
+        print("component: %s %s %s" % (hostname, component, commit_hash),
+              file=sys.stderr)
+    return components
 
 
 def restart(service):
