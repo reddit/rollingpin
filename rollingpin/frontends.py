@@ -172,7 +172,7 @@ class HeadlessFrontend(object):
             if 'results' not in results:
                 continue
             for command, output in results['results']:
-                if command[0] != 'component_report':
+                if command[0] != 'components':
                     continue
                 for component, sha in output['components'].iteritems():
                     report[component][sha] += 1

@@ -105,7 +105,7 @@ def deploy(*components_with_tokens):
         # TODO: put your deploy logic here!
 
 
-def component_report():
+def components():
     """Collect information about the SHA of each running process.
 
     This can be used to identify hanging processes.  A summary report will be
@@ -116,7 +116,7 @@ def component_report():
         foo         012345      1
         bar         abcdef      1
 
-    To support this functionality, the `component_report` command should
+    To support this functionality, the `components` command should
     return a result containing all running SHAs of all components on the
     host, in the format:
 
@@ -127,7 +127,7 @@ def component_report():
             }
         }
 
-    The `component_report` command should also print more detailed
+    The `components` command should also print more detailed
     information to stderr to allow an operator to dig in further if a
     problem is found.  The suggested format of this output:
 
@@ -222,6 +222,7 @@ if __name__ == "__main__":
     main({
         "synchronize": synchronize,
         "build": build,
+        "components": components,
         "deploy": deploy,
         "restart": restart,
         "custom": custom,
