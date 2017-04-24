@@ -161,7 +161,7 @@ class HeadlessFrontend(object):
         elapsed = time.time() - self.start_time
         print "*** elapsed time: %d seconds" % elapsed
 
-        report = collections.defaultdict(lambda: collections.Counter())
+        report = collections.defaultdict(collections.Counter)
         for host, results in self.host_results.iteritems():
             # Messed up hosts won't have results
             if 'results' not in results:
