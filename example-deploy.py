@@ -57,13 +57,24 @@ def synchronize(*components):
 def build(*components_with_tokens):
     """Build a component in preparation for deploy.
 
+    :param components_with_tokens: a list of deploy targets and SHAs to be
+        deployed, each in the format "foo@12345".
+
     This will be called once on each build host with a list of all components
     to build.  The script should prepare the components for deploy in whatever
     way is necessary (build a .deb package, fetch down from an SCM system,
     etc.) and return a mapping of components to tokens that identify the
-    relevant build artifacts.
+    relevant build artifacts, in the format:
+
+        {
+            'foo@012345': '012345',
+            'bar@abcdef': 'abcdef',
+        }
 
     This command is required if you want to run "-d" commands in rollingpin.
+
+    If ``build-host`` is present in the root directory of your project, rollingpin
+    will run the build command on the host specified in the file.
 
     """
 
