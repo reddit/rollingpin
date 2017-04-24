@@ -161,11 +161,6 @@ class HeadlessFrontend(object):
         elapsed = time.time() - self.start_time
         print "*** elapsed time: %d seconds" % elapsed
 
-        # TODO: Make this smarter.  It should only show anomolous
-        # stuff.  Or maybe color that stuff differently.
-        #
-        # TODO: Check if component report was even requested before going
-        # through them all?
         report = collections.defaultdict(lambda: collections.Counter())
         for host, results in self.host_results.iteritems():
             # Messed up hosts won't have results
