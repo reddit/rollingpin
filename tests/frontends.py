@@ -14,7 +14,7 @@ class TestFrontends(unittest.TestCase):
         results = [
             DeployResult(
                 command=['components'],
-                result={'components': {'foo': 'abcdef'}},
+                result={'components': {'foo': {'abcdef': 1}}},
             ),
         ]
         host_results = {host: {'status': "success", 'results': results}}
@@ -41,7 +41,7 @@ class TestFrontends(unittest.TestCase):
             ),
             DeployResult(
                 command=['components'],
-                result={'components': {'foo': 'abcdef'}},
+                result={'components': {'foo': {'abcdef': 1}}},
             ),
         ]
         host_results = {host: {'status': "success", 'results': results}}
@@ -74,3 +74,24 @@ class TestFrontends(unittest.TestCase):
 
         # Verify
         self.assertEqual(report, {})
+
+    def test_coverage_report_aggregates_multiple_hosts(self):
+
+        # Setup
+        results = [
+            DeployResult(
+                command=['components'],
+                result={'components': {'foo': {'abcdef': 1}}},
+            ),
+        ]
+        host_results = {
+            Host.from_hostname('test'): {'status': "success", 'results': results},
+            Host.from_hostname('test-2'): {'status': "success", 'results': results},
+        }
+
+        # Generate Report
+        report = generate_component_report(host_results)
+
+        # Verify
+        expected_report = {'foo': {'abcdef': 2}}
+        self.assertEqual(report, expected_report)

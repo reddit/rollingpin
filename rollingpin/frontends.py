@@ -70,8 +70,16 @@ def generate_component_report(host_results):
         for result in results.get('results', []):
             if result.command[0] != 'components':
                 continue
-            for component, sha in result.result['components'].iteritems():
-                report[component][sha] += 1
+            # Example result.result['components']:
+            #
+            #     {
+            #         'foo': {
+            #             'abcdef': 2,
+            #         },
+            #     }
+            for component, sha_counts in result.result['components'].iteritems():
+                for sha, count in sha_counts.iteritems():
+                    report[component][sha] += count
     return report
 
 
