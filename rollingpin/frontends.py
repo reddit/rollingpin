@@ -169,11 +169,16 @@ class HeadlessFrontend(object):
                 for component, sha in result.result['components'].iteritems():
                     report[component][sha] += 1
         if report:
+            # Pad the columns to reasonable max widths so the tabs will line up
+            # and be readable.  For SHAs, we expect 40 characters.  For
+            # components and counts, we choose some reasonably large lengths
+            # that we may need to adjust later.
+            fmt_string = "%20s\t%40s\t%10s"
             print colorize("*** component report", Color.BOLD(Color.GREEN))
-            print "COMPONENT\tSHA\tCOUNT"
+            print fmt_string % ("COMPONENT", "SHA", "COUNT")
             for component in report.keys():
                 for sha, count in report[component].iteritems():
-                    print "%s\t%s\t%s" % (component, sha, count)
+                    print fmt_string % (component, sha, count)
 
 
 class StdioListener(Protocol):
