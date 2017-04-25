@@ -51,6 +51,9 @@ class ComponentNotBuiltError(DeployError):
         return "{}: build token not generated".format(self.component)
 
 
+DeployResult = collections.namedtuple('DeployResult', ['command', 'result'])
+
+
 class Deployer(object):
 
     def __init__(self, config, event_bus, parallel, sleeptime, timeout):
@@ -82,7 +85,7 @@ class Deployer(object):
                 yield self.event_bus.trigger(
                     "host.command", host=host, command=command)
                 result = yield connection.execute(log, command, timeout)
-                results.append((command, result))
+                results.append(DeployResult(command, result))
             yield connection.disconnect()
         except TransportError as e:
             should_be_alive = yield self.host_source.should_be_alive(host)
@@ -133,11 +136,10 @@ class Deployer(object):
                     # component
                     sync_command = ["synchronize"] + components
                     code_host = Host.from_hostname(self.code_host)
-                    (results,) = yield self.process_host(
+                    (sync_result,) = yield self.process_host(
                         code_host, [sync_command])
-                    command, sync_result = results
                     yield self.event_bus.trigger("build.sync",
-                                                 sync_info=sync_result)
+                                                 sync_info=sync_result.result)
 
                     # this is where we build up the final deploy command
                     # resulting from all our syncing and building
@@ -145,7 +147,7 @@ class Deployer(object):
 
                     # collect the results of the sync per-buildhost
                     by_buildhost = collections.defaultdict(list)
-                    for component, sync_info in sync_result.iteritems():
+                    for component, sync_info in sync_result.result.iteritems():
                         component_ref = component + "@" + sync_info["token"]
 
                         build_host = sync_info.get("buildhost", None)
@@ -161,15 +163,14 @@ class Deployer(object):
                     for build_hostname, build_refs in by_buildhost.iteritems():
                         build_command = ["build"] + build_refs
                         build_host = Host.from_hostname(build_hostname)
-                        (results,) = yield self.process_host(
+                        (build_result,) = yield self.process_host(
                             build_host, [build_command])
-                        command, tokens = results
 
                         for ref in build_refs:
                             component, at, sync_token = ref.partition("@")
                             assert at == "@"
                             try:
-                                deploy_ref = component + "@" + tokens[ref]
+                                deploy_ref = component + "@" + build_result.result[ref]
                             except KeyError:
                                 raise ComponentNotBuiltError(component)
                             deploy_command.append(deploy_ref)

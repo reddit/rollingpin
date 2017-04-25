@@ -163,10 +163,10 @@ class HeadlessFrontend(object):
 
         report = collections.defaultdict(collections.Counter)
         for host, results in self.host_results.iteritems():
-            for command, output in results.get('results', []):
-                if command[0] != 'components':
+            for result in results.get('results', []):
+                if result.command[0] != 'components':
                     continue
-                for component, sha in output['components'].iteritems():
+                for component, sha in result.result['components'].iteritems():
                     report[component][sha] += 1
         if report:
             print colorize("*** component report", Color.BOLD(Color.GREEN))
