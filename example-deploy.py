@@ -74,9 +74,6 @@ def build(*components_with_tokens):
 
     This command is required if you want to run "-d" commands in rollingpin.
 
-    If ``build-host`` is present in the root directory of your project, rollingpin
-    will run the build command on the host specified in the file.
-
     """
 
     res = {}
