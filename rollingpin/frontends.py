@@ -63,6 +63,18 @@ class HostFormatter(logging.Formatter):
         return colorize(formatted, color)
 
 
+def generate_component_report(host_results):
+    """Aggregate a list of results from the `components` deploy command."""
+    report = collections.defaultdict(collections.Counter)
+    for host, results in host_results.iteritems():
+        for result in results.get('results', []):
+            if result.command[0] != 'components':
+                continue
+            for component, sha in result.result['components'].iteritems():
+                report[component][sha] += 1
+    return report
+
+
 class HeadlessFrontend(object):
 
     def __init__(self, event_bus, hosts, verbose_logging):
@@ -161,13 +173,7 @@ class HeadlessFrontend(object):
         elapsed = time.time() - self.start_time
         print "*** elapsed time: %d seconds" % elapsed
 
-        report = collections.defaultdict(collections.Counter)
-        for host, results in self.host_results.iteritems():
-            for result in results.get('results', []):
-                if result.command[0] != 'components':
-                    continue
-                for component, sha in result.result['components'].iteritems():
-                    report[component][sha] += 1
+        report = generate_component_report(self.host_results)
         if report:
             # Pad the columns to reasonable max widths so the tabs will line up
             # and be readable.  For SHAs, we expect 40 characters.  For
