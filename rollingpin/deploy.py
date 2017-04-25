@@ -170,7 +170,8 @@ class Deployer(object):
                             component, at, sync_token = ref.partition("@")
                             assert at == "@"
                             try:
-                                deploy_ref = component + "@" + build_result.result[ref]
+                                deploy_ref = (component + "@" +
+                                              build_result.result[ref])
                             except KeyError:
                                 raise ComponentNotBuiltError(component)
                             deploy_command.append(deploy_ref)
