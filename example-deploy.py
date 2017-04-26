@@ -115,12 +115,16 @@ def components():
 
     To support this functionality, the `components` command should
     return a result containing all running SHAs of all components on the
-    host, in the format:
+    host and their counts, in the format:
 
         {
             'components': {
-                'foo': '012345',
-                'bar': 'abcdef',
+                'foo': {
+                    '012345': 1
+                },
+                'bar': {
+                    'abcdef': 1
+                }
             }
         }
 
@@ -128,8 +132,8 @@ def components():
     information to stderr to allow an operator to dig in further if a
     problem is found.  The suggested format of this output:
 
-        component: app-123 foo@012345
-        component: app-123 bar@abcdef
+        component: app-123 foo@012345 1
+        component: app-123 bar@abcdef 1
 
     """
     components = {
