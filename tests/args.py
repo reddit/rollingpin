@@ -4,6 +4,7 @@ from rollingpin.args import make_arg_parser, construct_canonical_commandline
 
 
 class TestArgumentParsing(unittest.TestCase):
+
     def setUp(self):
         self.parser = make_arg_parser({
             "deploy": {
@@ -131,7 +132,8 @@ class TestArgumentParsing(unittest.TestCase):
 
     def test_multi_restart(self):
         args = self.parser.parse_args(["-h", "a", "-r", "all", "-r", "more"])
-        self.assertEqual(args.commands, [["restart", "all"], ["restart", "more"]])
+        self.assertEqual(
+            args.commands, [["restart", "all"], ["restart", "more"]])
 
     # -c
     def test_no_commands(self):
@@ -148,11 +150,13 @@ class TestArgumentParsing(unittest.TestCase):
 
     # mixup
     def test_commands_together(self):
-        args = self.parser.parse_args(["-h", "a", "-c", "test", "args", "-r", "all"])
+        args = self.parser.parse_args(
+            ["-h", "a", "-c", "test", "args", "-r", "all"])
         self.assertEqual(args.commands, [["test", "args"], ["restart", "all"]])
 
 
 class TestArgumentReconstruction(unittest.TestCase):
+
     def setUp(self):
         self.config = {
             "deploy": {
@@ -186,12 +190,14 @@ class TestArgumentReconstruction(unittest.TestCase):
     def test_startat(self):
         args = self.parser.parse_args(["-h", "host", "--startat", "host"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --startat=host --parallel=5 --timeout=60", canonical)
+        self.assertEqual(
+            "-h host --startat=host --parallel=5 --timeout=60", canonical)
 
     def test_stopbefore(self):
         args = self.parser.parse_args(["-h", "host", "--stopbefore", "host"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --stopbefore=host --parallel=5 --timeout=60", canonical)
+        self.assertEqual(
+            "-h host --stopbefore=host --parallel=5 --timeout=60", canonical)
 
     def test_parallel(self):
         args = self.parser.parse_args(["-h", "host", "--parallel", "1"])
@@ -201,42 +207,57 @@ class TestArgumentReconstruction(unittest.TestCase):
     def test_sleeptime(self):
         args = self.parser.parse_args(["-h", "host", "--sleeptime", "5"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --sleeptime=5 --timeout=60", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --sleeptime=5 --timeout=60", canonical)
 
     def test_pauseafter(self):
         args = self.parser.parse_args(["-h", "host", "--pauseafter", "2"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --pauseafter=2 --timeout=60", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --pauseafter=2 --timeout=60", canonical)
 
     def test_no_harold(self):
         args = self.parser.parse_args(["-h", "host", "--no-harold"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --timeout=60 --no-harold", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --timeout=60 --no-harold", canonical)
 
     def test_single_deploy(self):
         args = self.parser.parse_args(["-h", "host", "-d", "component"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --timeout=60 -d component", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --timeout=60 -d component", canonical)
 
     def test_multiple_deploys(self):
-        args = self.parser.parse_args(["-h", "host", "-d", "component", "component2"])
+        args = self.parser.parse_args(
+            ["-h", "host", "-d", "component", "component2"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --timeout=60 -d component component2", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --timeout=60 -d component component2",
+            canonical
+        )
 
     def test_multiple_dash_ds(self):
-        args = self.parser.parse_args(["-h", "host", "-d", "component", "-d", "component2"])
+        args = self.parser.parse_args(
+            ["-h", "host", "-d", "component", "-d", "component2"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --timeout=60 -d component component2", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --timeout=60 -d component component2",
+            canonical
+        )
 
     def test_restart(self):
         args = self.parser.parse_args(["-h", "host", "-r", "component"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --timeout=60 -r component", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --timeout=60 -r component", canonical)
 
     def test_multi_restart(self):
-        args = self.parser.parse_args(["-h", "host", "-r", "com1", "-r", "com2"])
+        args = self.parser.parse_args(
+            ["-h", "host", "-r", "com1", "-r", "com2"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --timeout=60 -r com1 -r com2", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --timeout=60 -r com1 -r com2", canonical)
 
     def test_simple_command(self):
         args = self.parser.parse_args(["-h", "host", "-c", "cmd"])
@@ -246,14 +267,18 @@ class TestArgumentReconstruction(unittest.TestCase):
     def test_command_with_args(self):
         args = self.parser.parse_args(["-h", "host", "-c", "cmd", "arg"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --timeout=60 -c cmd arg", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --timeout=60 -c cmd arg", canonical)
 
     def test_multiple_commands(self):
-        args = self.parser.parse_args(["-h", "host", "-c", "cmd1", "-c", "cmd2"])
+        args = self.parser.parse_args(
+            ["-h", "host", "-c", "cmd1", "-c", "cmd2"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --timeout=60 -c cmd1 -c cmd2", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --timeout=60 -c cmd1 -c cmd2", canonical)
 
     def test_verbose(self):
         args = self.parser.parse_args(["-h", "host", "-v"])
         canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual("-h host --parallel=5 --timeout=60 --verbose", canonical)
+        self.assertEqual(
+            "-h host --parallel=5 --timeout=60 --verbose", canonical)

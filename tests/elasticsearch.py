@@ -7,6 +7,7 @@ from rollingpin.elasticsearch import ElasticSearchNotifier
 
 @patch('time.time', MagicMock(return_value=1))
 class TestElasticSearchNotifier(unittest.TestCase):
+
     def setUp(self):
         self.components = ["service-1", "service-2"]
         self.hosts = ["host1", "host2", "host3"]
@@ -19,14 +20,21 @@ class TestElasticSearchNotifier(unittest.TestCase):
                 "type": "mytype"
             }
         }
-        self.es_notifier_args = [self.config, self.components, self.hosts, self.command, self.deploy_word]
+        self.es_notifier_args = [
+            self.config,
+            self.components,
+            self.hosts,
+            self.command,
+            self.deploy_word
+        ]
         self.es_notifier = ElasticSearchNotifier(*self.es_notifier_args)
 
     @patch('rollingpin.elasticsearch.reactor', MagicMock())
     def test_index_doc(self):
         agent = MagicMock()
         doc = {'hello': 'world'}
-        with patch('rollingpin.elasticsearch.Agent', MagicMock(return_value=agent)):
+        patch_target = 'rollingpin.elasticsearch.Agent'
+        with patch(patch_target, MagicMock(return_value=agent)):
             self.es_notifier.index_doc(doc)
 
         agent.request.assert_called()

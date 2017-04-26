@@ -7,6 +7,7 @@ from tests import make_configparser
 
 
 class TestMissingData(unittest.TestCase):
+
     def test_missing_section(self):
         parser = ConfigParser.ConfigParser()
         with self.assertRaises(rollingpin.config.ConfigurationError) as info:
@@ -48,6 +49,7 @@ class TestMissingData(unittest.TestCase):
 
 
 class TestConfiguration(unittest.TestCase):
+
     def setUp(self):
         self.parser = make_configparser("""
         [section]
@@ -90,6 +92,7 @@ class TestConfiguration(unittest.TestCase):
 
 
 class TestOptionalSections(unittest.TestCase):
+
     def test_bad_optional_section(self):
         parser = ConfigParser.ConfigParser()
         with self.assertRaises(rollingpin.config.NoDefaultInOptionalSection):
