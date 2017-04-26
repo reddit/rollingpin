@@ -63,26 +63,6 @@ class HostFormatter(logging.Formatter):
         return colorize(formatted, color)
 
 
-def generate_component_report(host_results):
-    """Aggregate a list of results from the `components` deploy command."""
-    report = collections.defaultdict(collections.Counter)
-    for host, results in host_results.iteritems():
-        for result in results.get('results', []):
-            if result.command[0] != 'components':
-                continue
-            # Example result.result['components']:
-            #
-            #     {
-            #         'foo': {
-            #             'abcdef': 2,
-            #         },
-            #     }
-            for component, sha_counts in result.result['components'].iteritems():
-                for sha, count in sha_counts.iteritems():
-                    report[component][sha] += count
-    return report
-
-
 class HeadlessFrontend(object):
 
     def __init__(self, event_bus, hosts, verbose_logging):
@@ -105,7 +85,7 @@ class HeadlessFrontend(object):
         root = logging.getLogger()
         root.addHandler(self.log_handler)
 
-        self.host_results = {k: {} for k in hosts}
+        self.host_results = dict.fromkeys(hosts, None)
         self.start_time = None
 
         event_bus.register({
@@ -135,18 +115,17 @@ class HeadlessFrontend(object):
     def percent_complete(self):
         return (self.count_completed_hosts() / self.count_hosts()) * 100
 
-    def on_host_end(self, host, results):
+    def on_host_end(self, host):
         if host in self.host_results:
-            self.host_results[host]['status'] = "success"
-            self.host_results[host]['results'] = results
+            self.host_results[host] = "success"
             print colorize("*** %d%% done" % self.percent_complete(), Color.GREEN)  # noqa
 
     def on_host_abort(self, host, error, should_be_alive):
         if host in self.host_results:
             if should_be_alive:
-                self.host_results[host]['status'] = "error"
+                self.host_results[host] = "error"
             else:
-                self.host_results[host]['status'] = "warning"
+                self.host_results[host] = "warning"
 
     def on_deploy_abort(self, reason):
         print colorize(
@@ -155,7 +134,7 @@ class HeadlessFrontend(object):
     def on_deploy_end(self):
         by_result = collections.defaultdict(list)
         for host, result in self.host_results.iteritems():
-            by_result[result['status']].append(host)
+            by_result[result].append(host)
 
         print colorize("*** deploy complete!", Color.BOLD(Color.GREEN))
 
@@ -180,19 +159,6 @@ class HeadlessFrontend(object):
 
         elapsed = time.time() - self.start_time
         print "*** elapsed time: %d seconds" % elapsed
-
-        report = generate_component_report(self.host_results)
-        if report:
-            # Pad the columns to reasonable max widths so the tabs will line up
-            # and be readable.  For SHAs, we expect 40 characters.  For
-            # components and counts, we choose some reasonably large lengths
-            # that we may need to adjust later.
-            fmt_string = "%20s\t%40s\t%10s"
-            print colorize("*** component report", Color.BOLD(Color.GREEN))
-            print fmt_string % ("COMPONENT", "SHA", "COUNT")
-            for component in report.keys():
-                for sha, count in report[component].iteritems():
-                    print fmt_string % (component, sha, count)
 
 
 class StdioListener(Protocol):
