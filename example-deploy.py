@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import json
 import os
+import socket
 import subprocess
 import sys
 
@@ -57,11 +58,19 @@ def synchronize(*components):
 def build(*components_with_tokens):
     """Build a component in preparation for deploy.
 
+    :param components_with_tokens: a list of deploy targets and SHAs to be
+        deployed, each in the format "foo@12345".
+
     This will be called once on each build host with a list of all components
     to build.  The script should prepare the components for deploy in whatever
     way is necessary (build a .deb package, fetch down from an SCM system,
     etc.) and return a mapping of components to tokens that identify the
-    relevant build artifacts.
+    relevant build artifacts, in the format:
+
+        {
+            'foo@012345': '012345',
+            'bar@abcdef': 'abcdef',
+        }
 
     This command is required if you want to run "-d" commands in rollingpin.
 
@@ -91,6 +100,52 @@ def deploy(*components_with_tokens):
         assert sep == "@"
 
         # TODO: put your deploy logic here!
+
+
+def components():
+    """Collect information about the SHA of each running process.
+
+    This can be used to identify hanging processes.  A summary report will be
+    a printed to stdout, in the format:
+
+        *** component report
+        COMPONENT      SHA     COUNT
+        foo         012345      1
+        bar         abcdef      1
+
+    To support this functionality, the `components` command should
+    return a result containing all running SHAs of all components on the
+    host and their counts, in the format:
+
+        {
+            'components': {
+                'foo': {
+                    '012345': 1
+                },
+                'bar': {
+                    'abcdef': 1
+                }
+            }
+        }
+
+    The `components` command should also print more detailed
+    information to stderr to allow an operator to dig in further if a
+    problem is found.  The suggested format of this output:
+
+        component: app-123 foo@012345 1
+        component: app-123 bar@abcdef 1
+
+    """
+    components = {
+        'components': {
+            'foo': '012345',
+        },
+    }
+    hostname = socket.gethostname()
+    for component, commit_hash in components['components'].iteritems():
+        print("component: %s %s %s" % (hostname, component, commit_hash),
+              file=sys.stderr)
+    return components
 
 
 def restart(service):
@@ -168,6 +223,7 @@ if __name__ == "__main__":
     main({
         "synchronize": synchronize,
         "build": build,
+        "components": components,
         "deploy": deploy,
         "restart": restart,
         "custom": custom,

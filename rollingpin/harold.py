@@ -111,7 +111,7 @@ class HaroldNotifier(object):
             })
 
     @inlineCallbacks
-    def on_host_end(self, host):
+    def on_host_end(self, host, results):
         self.completed_hosts += 1
 
         with swallow_exceptions("harold", self.log):
