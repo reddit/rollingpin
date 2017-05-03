@@ -133,7 +133,7 @@ class HeadlessFrontend(object):
         return sum(1 for v in self.host_results.itervalues() if v)
 
     def percent_complete(self):
-        return (self.count_completed_hosts() / self.count_hosts()) * 100
+        return int((self.count_completed_hosts() / self.count_hosts()) * 100)
 
     def on_host_end(self, host, results):
         if host in self.host_results:
