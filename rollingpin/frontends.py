@@ -310,7 +310,10 @@ class HeadfulFrontend(HeadlessFrontend):
                 completed_hosts = self.count_completed_hosts()
                 desired_host_index = int(
                     (desired_percent / 100) * self.count_hosts())
-                self.pause_after = desired_host_index - completed_hosts
+
+                # since pause_after=0 means "don't pause", we want to make sure
+                # that rounding never accidentally puts us at zero
+                self.pause_after = max(desired_host_index - completed_hosts, 1)
                 break
 
         self.enqueued_hosts = 0
