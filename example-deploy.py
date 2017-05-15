@@ -132,8 +132,11 @@ def components():
     information to stderr to allow an operator to dig in further if a
     problem is found.  The suggested format of this output:
 
-        component: app-123 foo@012345 1
-        component: app-123 bar@abcdef 1
+        component: [pid] [component] [sha] [count]
+
+    e.g.:
+
+        component: 9001 bar abcdef 1
 
     """
     components = {
