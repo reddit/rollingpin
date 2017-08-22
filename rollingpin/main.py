@@ -31,6 +31,7 @@ from .providers import get_provider, UnknownProviderError
 from .utils import random_word, interleaved
 
 
+PROFILE_DIRECTORY = "/etc/rollingpin.d/"
 CONFIG_SPEC = {
     "deploy": {
         "log-directory": Option(str),
@@ -86,11 +87,12 @@ def load_provider(provider_type, config_parser):
     return provider_cls(provider_config)
 
 
-def _load_configuration():
+def _load_configuration(profile_name, profile_directory="/etc/rollingpin.d/"):
     config_parser = ConfigParser.ConfigParser()
     try:
         config_parser.read([
             "/etc/rollingpin.ini",
+            "{}/{}.ini".format(profile_directory, profile_name),
             os.path.expanduser("~/.rollingpin.ini"),
         ])
     except ConfigParser.Error as e:
@@ -114,8 +116,8 @@ def _load_configuration():
     return config
 
 
-def _parse_args(config, raw_args):
-    arg_parser = make_arg_parser(config)
+def _parse_args(config, raw_args, initial_parser):
+    arg_parser = make_arg_parser(config, initial_parser)
     if not raw_args:
         arg_parser.print_help()
         sys.exit(0)
@@ -153,9 +155,14 @@ def _main(reactor, *raw_args):
     # the cypher used for SSH connections. we don't care and can't do anything
     # about it for now.
     warnings.simplefilter("ignore")
+    initial_parser = make_profile_parser(PROFILE_DIRECTORY)
+    if not raw_args:
+        initial_parser.print_help()
+        sys.exit(0)
+    args, _ = initial_parser.parse_known_args(args=raw_args)
 
-    config = _load_configuration()
-    args = _parse_args(config, raw_args)
+    config = _load_configuration(args.profile, PROFILE_DIRECTORY)
+    args = _parse_args(config, raw_args, initial_parser)
     hosts = yield _select_hosts(config, args)
 
     # set up event listeners

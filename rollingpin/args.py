@@ -1,4 +1,5 @@
 import argparse
+import os
 
 
 PAUSEAFTER_DEFAULT = 1
@@ -21,11 +22,15 @@ class RestartCommand(ExtendList):
 
 def _add_selection_arguments(config, parser):
     selection_group = parser.add_argument_group("host selection")
+    default_hosts = config["deploy"].get("hosts", [])
+    if not isinstance(default_hosts, list):
+        default_hosts = [default_hosts]
+
     selection_group.add_argument(
         "-h",
         action=ExtendList,
         nargs="+",
-        default=[],
+        default=default_hosts,
         required=True,
         help="host(s) or group(s) to execute commands on",
         metavar="HOST",
@@ -154,20 +159,28 @@ def _add_deploy_arguments(config, parser):
             "order specified on the command line."),
     )
 
+    default_components = config["deploy"].get("components", [])
+    if not isinstance(default_components, list):
+        default_components = [default_components]
+
     deploy_group.add_argument(
         "-d",
         action=ExtendList,
         nargs="+",
-        default=[],
+        default=default_components,
         help="deploy the specified components",
         metavar="CMPNT",
         dest="components",
     )
 
+    default_restarts = config["deploy"].get("restarts", [])
+    if not isinstance(default_restarts, list):
+        default_restarts = [default_restarts]
+
     deploy_group.add_argument(
         "-r",
         action=RestartCommand,
-        default=[],
+        default=default_restarts,
         help="whom to restart",
         metavar="TARGET",
         dest="commands",
@@ -184,8 +197,9 @@ def _add_deploy_arguments(config, parser):
     )
 
 
-def make_arg_parser(config):
+def make_arg_parser(config, parent_parser=None):
     parser = argparse.ArgumentParser(
+        parents=[parent_parser] if parent_parser else [],
         description="roll stuff to servers",
         add_help=False,
     )
@@ -243,3 +257,28 @@ def construct_canonical_commandline(config, args):
             arg_list.extend(command)
 
     return " ".join(arg_list)
+
+
+def _get_available_profiles(profile_dir):
+    profiles = []
+    for f in os.listdir(profile_dir):
+        if f.endswith(".ini"):
+            profile_name, _ = f.split(".", 1)
+            profiles.append(profile_name)
+
+    return profiles
+
+def make_profile_parser(profile_dir="/etc/rollingpin.d/",
+                        available_profiles=None):
+    parser = argparse.ArgumentParser(
+        description="roll stuff to servers",
+        add_help=False,
+    )
+
+    parser.add_argument(
+        "profile",
+        choices=available_profiles or _get_available_profiles(profile_dir),
+        help="profile to run against",
+    )
+
+    return parser

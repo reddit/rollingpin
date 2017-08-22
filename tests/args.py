@@ -1,12 +1,16 @@
 import unittest
 
-from rollingpin.args import make_arg_parser, construct_canonical_commandline
+from rollingpin.args import (
+    make_arg_parser,
+    make_profile_parser,
+    construct_canonical_commandline,
+)
 
 
 class TestArgumentParsing(unittest.TestCase):
 
     def setUp(self):
-        self.parser = make_arg_parser({
+        self.config = {
             "deploy": {
                 "default-parallel": 5,
                 "default-sleeptime": 2,
@@ -17,7 +21,8 @@ class TestArgumentParsing(unittest.TestCase):
                 "base-url": "http://example.com",
                 "secret": None,
             },
-        })
+        }
+        self.parser = make_arg_parser(self.config)
 
     # -h
     def test_no_args(self):
@@ -162,6 +167,42 @@ class TestArgumentParsing(unittest.TestCase):
         args = self.parser.parse_args(
             ["-h", "a", "-c", "test", "args", "-r", "all"])
         self.assertEqual(args.commands, [["test", "args"], ["restart", "all"]])
+
+
+class TestProfileArguments(unittest.TestCase):
+
+    def setUp(self):
+        self.config = {
+            "deploy": {
+                "default-parallel": 5,
+                "default-sleeptime": 2,
+                "execution-timeout": 60,
+            },
+
+            "harold": {
+                "base-url": "http://example.com",
+                "secret": None,
+            },
+        }
+        self.profiles = ["foo", "bar", "baz"]
+        self.profile_parser = make_profile_parser(available_profiles=self.profiles)
+        self.parser = make_arg_parser(self.config, parent_parser=self.profile_parser)
+
+    def test_profiles_arg(self):
+        args = ["foo", "-h", "a", "-c", "test"]
+
+        profile_info, _ = self.profile_parser.parse_known_args(args=args)
+
+        full_args = self.parser.parse_args(args)
+
+        self.assertEqual(profile_info.profile, "foo")
+        self.assertEqual(full_args.commands, [["test"]])
+
+    def test_invalid_profile(self):
+        args = ["bad", "-h", "a"]
+
+        with self.assertRaises(SystemExit):
+            profile_info, _ = self.profile_parser.parse_known_args(args=args)
 
 
 class TestArgumentReconstruction(unittest.TestCase):
