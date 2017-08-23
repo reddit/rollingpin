@@ -7,17 +7,16 @@ PAUSEAFTER_DEFAULT = 1
 
 
 class ExtendList(argparse.Action):
-    def __init__(self, *args, **kwargs):
-        super(ExtendList, self).__init__(*args, **kwargs)
-        if isinstance(self.default, list):
-            self.true_default = self.default[:]
-        else:
-            self.true_default = self.default
-
     def __call__(self, parser, namespace, values, option_string):
         list_to_extend = getattr(namespace, self.dest)
-        if self.true_default:  # if a default is defined, remove it before extending
-            for default in self.true_default:
+        if list_to_extend is self.default:
+            # if the current value is the same ref as the default,
+            # create a copy (so that extensions does not modify the
+            # default value
+            list_to_extend = self.default[:]
+        if self.default:
+            # if a default is defined, remove it before extending
+            for default in self.default:
                 list_to_extend.remove(default)
         list_to_extend.extend(values)
         setattr(namespace, self.dest, list_to_extend)
