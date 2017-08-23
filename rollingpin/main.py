@@ -11,6 +11,7 @@ from .args import (
     make_arg_parser,
     construct_canonical_commandline,
     make_profile_parser,
+    build_action_summary,
 )
 from .config import (
     coerce_and_validate_config,
@@ -171,7 +172,7 @@ def _main(reactor, *raw_args):
     config = _load_configuration(args.profile, PROFILE_DIRECTORY)
     args = _parse_args(config, raw_args, args.profile)
     if args.test:
-        print "rollout " + construct_canonical_commandline(config, args)
+        print build_action_summary(config, args)
         sys.exit(0)
 
     hosts = yield _select_hosts(config, args)

@@ -278,6 +278,37 @@ def construct_canonical_commandline(config, args):
     return " ".join(arg_list)
 
 
+def build_action_summary(config, args):
+    expanded_command = os.path.basename(sys.argv[0]) + " " \
+            + construct_canonical_commandline(config, args)
+
+    summary_points = []
+
+    for component in args.components:
+        summary_points.append("Deploy the `{}` component.".format(component))
+
+    for command in args.commands:
+        if command[0] == "restart":
+            summary_points.append(
+                "Restart `{}` applications.".format(command[1]))
+        else:
+            summary_points.append("Run the `{}` command.".format(" ".join(command)))
+
+    summary_details = []
+
+    for host in args.host_refs:
+        summary_details.append("on `{}` hosts".format(host))
+
+    summary_details.append("{} at a time".format(args.parallel))
+    if args.timeout is not None:
+        summary_details.append(
+            "timing out if a host takes more than {} seconds".format(args.timeout))
+
+    return "\n".join([expanded_command, "", "This will:", ""] +
+                     ["* {}".format(p) for p in summary_points] +
+                     ["", ', '.join(summary_details), ""])
+
+
 def _get_available_profiles(profile_dir):
     profiles = []
     for f in os.listdir(profile_dir):
