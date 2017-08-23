@@ -7,7 +7,11 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import react
 
 from .elasticsearch import enable_elastic_search_notifications
-from .args import make_arg_parser, construct_canonical_commandline
+from .args import (
+    make_arg_parser,
+    construct_canonical_commandline,
+    make_profile_parser,
+)
 from .config import (
     coerce_and_validate_config,
     ConfigurationError,
@@ -40,6 +44,9 @@ CONFIG_SPEC = {
         "default-sleeptime": Option(int),
         "default-parallel": Option(int),
         "execution-timeout": Option(int, default=0),
+        "default-hosts": Option(str, default=[]),
+        "default-components": Option(str, default=[]),
+        "default-restart": Option(str, default=[]),
     },
 
     "harold": OptionalSection({
@@ -87,7 +94,7 @@ def load_provider(provider_type, config_parser):
     return provider_cls(provider_config)
 
 
-def _load_configuration(profile_name, profile_directory="/etc/rollingpin.d/"):
+def _load_configuration(profile_name, profile_directory=PROFILE_DIRECTORY):
     config_parser = ConfigParser.ConfigParser()
     try:
         config_parser.read([
@@ -159,10 +166,14 @@ def _main(reactor, *raw_args):
     if not raw_args:
         initial_parser.print_help()
         sys.exit(0)
-    args, _ = initial_parser.parse_known_args(args=raw_args)
+    args, raw_args = initial_parser.parse_known_args(args=raw_args)
 
     config = _load_configuration(args.profile, PROFILE_DIRECTORY)
-    args = _parse_args(config, raw_args, initial_parser)
+    args = _parse_args(config, raw_args, args.profile)
+    if args.test:
+        print "rollout " + construct_canonical_commandline(config, args)
+        sys.exit(0)
+
     hosts = yield _select_hosts(config, args)
 
     # set up event listeners

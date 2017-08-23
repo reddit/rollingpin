@@ -1,4 +1,5 @@
 import unittest
+import mock
 
 from rollingpin.args import (
     make_arg_parser,
@@ -185,13 +186,14 @@ class TestProfileArguments(unittest.TestCase):
             },
         }
         self.profiles = ["foo", "bar", "baz"]
-        self.profile_parser = make_profile_parser(available_profiles=self.profiles)
-        self.parser = make_arg_parser(self.config, parent_parser=self.profile_parser)
+        with mock.patch('rollingpin.args._get_available_profiles', return_value=self.profiles):
+            self.profile_parser = make_profile_parser()
+        self.parser = make_arg_parser(self.config)
 
     def test_profiles_arg(self):
         args = ["foo", "-h", "a", "-c", "test"]
 
-        profile_info, _ = self.profile_parser.parse_known_args(args=args)
+        profile_info, args = self.profile_parser.parse_known_args(args=args)
 
         full_args = self.parser.parse_args(args)
 

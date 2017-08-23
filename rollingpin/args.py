@@ -1,14 +1,24 @@
 import argparse
 import os
+import sys
 
 
 PAUSEAFTER_DEFAULT = 1
 
 
 class ExtendList(argparse.Action):
+    def __init__(self, *args, **kwargs):
+        super(ExtendList, self).__init__(*args, **kwargs)
+        if isinstance(self.default, list):
+            self.true_default = self.default[:]
+        else:
+            self.true_default = self.default
 
     def __call__(self, parser, namespace, values, option_string):
         list_to_extend = getattr(namespace, self.dest)
+        if self.true_default:  # if a default is defined, remove it before extending
+            for default in self.true_default:
+                list_to_extend.remove(default)
         list_to_extend.extend(values)
         setattr(namespace, self.dest, list_to_extend)
 
@@ -22,7 +32,8 @@ class RestartCommand(ExtendList):
 
 def _add_selection_arguments(config, parser):
     selection_group = parser.add_argument_group("host selection")
-    default_hosts = config["deploy"].get("hosts", [])
+
+    default_hosts = config["deploy"].get("default-hosts", [])
     if not isinstance(default_hosts, list):
         default_hosts = [default_hosts]
 
@@ -31,7 +42,7 @@ def _add_selection_arguments(config, parser):
         action=ExtendList,
         nargs="+",
         default=default_hosts,
-        required=True,
+        required=len(default_hosts) == 0,
         help="host(s) or group(s) to execute commands on",
         metavar="HOST",
         dest="host_refs",
@@ -108,6 +119,14 @@ def _add_flags(config, parser):
     )
 
     options_group.add_argument(
+        "--test",
+        action="store_true",
+        default=False,
+        help="print out the full command format instead of running",
+        dest="test",
+    )
+
+    options_group.add_argument(
         "--list",
         action="store_true",
         default=False,
@@ -159,7 +178,7 @@ def _add_deploy_arguments(config, parser):
             "order specified on the command line."),
     )
 
-    default_components = config["deploy"].get("components", [])
+    default_components = config["deploy"].get("default-components", [])
     if not isinstance(default_components, list):
         default_components = [default_components]
 
@@ -173,14 +192,14 @@ def _add_deploy_arguments(config, parser):
         dest="components",
     )
 
-    default_restarts = config["deploy"].get("restarts", [])
-    if not isinstance(default_restarts, list):
-        default_restarts = [default_restarts]
+    default_restart = config["deploy"].get("default-restart", [])
+    if default_restart:
+        default_restart = [["restart", default_restart]]
 
     deploy_group.add_argument(
         "-r",
         action=RestartCommand,
-        default=default_restarts,
+        default=default_restart,
         help="whom to restart",
         metavar="TARGET",
         dest="commands",
@@ -197,9 +216,10 @@ def _add_deploy_arguments(config, parser):
     )
 
 
-def make_arg_parser(config, parent_parser=None):
+def make_arg_parser(config, profile=None):
+    prog = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(
-        parents=[parent_parser] if parent_parser else [],
+        prog="{} {}".format(prog, profile) if profile else prog,
         description="roll stuff to servers",
         add_help=False,
     )
@@ -268,8 +288,8 @@ def _get_available_profiles(profile_dir):
 
     return profiles
 
-def make_profile_parser(profile_dir="/etc/rollingpin.d/",
-                        available_profiles=None):
+
+def make_profile_parser(profile_dir="/etc/rollingpin.d/"):
     parser = argparse.ArgumentParser(
         description="roll stuff to servers",
         add_help=False,
@@ -277,7 +297,7 @@ def make_profile_parser(profile_dir="/etc/rollingpin.d/",
 
     parser.add_argument(
         "profile",
-        choices=available_profiles or _get_available_profiles(profile_dir),
+        choices=_get_available_profiles(profile_dir),
         help="profile to run against",
     )
 
