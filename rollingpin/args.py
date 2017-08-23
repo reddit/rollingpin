@@ -192,16 +192,16 @@ def _add_deploy_arguments(config, parser):
     )
 
     default_restart = config["deploy"].get("default-restart", [])
-    if default_restart:
-        default_restart = [["restart", default_restart]]
+    if not isinstance(default_restart, list):
+        default_restart = [default_restart]
 
     deploy_group.add_argument(
         "-r",
-        action=RestartCommand,
+        action="append",
         default=default_restart,
         help="whom to restart",
         metavar="TARGET",
-        dest="commands",
+        dest="restart",
     )
 
     deploy_group.add_argument(

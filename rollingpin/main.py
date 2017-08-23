@@ -171,6 +171,9 @@ def _main(reactor, *raw_args):
 
     config = _load_configuration(args.profile, PROFILE_DIRECTORY)
     args = _parse_args(config, raw_args, args.profile)
+    for target in args.restart:
+        args.commands.append(["restart", target])
+
     if args.test:
         print build_action_summary(config, args)
         sys.exit(0)
