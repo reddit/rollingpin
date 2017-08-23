@@ -122,6 +122,12 @@ class Deployer(object):
     @inlineCallbacks
     def run_deploy(self, hosts, components, commands):
         try:
+            yield self.event_bus.trigger("deploy.precheck")
+        except AbortDeploy as e:
+            yield self.abort(str(e))
+            return
+
+        try:
             self.transport.initialize()
         except TransportError as e:
             raise DeployError("could not initialize transport: %s" % e)
