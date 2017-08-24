@@ -47,6 +47,7 @@ def fetch_deploy_status(config):
 
     # give the request a few seconds and bail out if it takes too long
     timeout = reactor.callLater(TIMEOUT_SECONDS, fetch_req.cancel)
+
     def cancel_timeout(passthrough):
         if timeout.active():
             timeout.cancel()
