@@ -8,7 +8,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue, CancelledError
 from twisted.web.client import Agent, readBody
 
 
-TIMEOUT = 5  # seconds
+TIMEOUT_SECONDS = 5
 
 
 # this is the "safe" response so if we're not configured or something goes
@@ -46,7 +46,7 @@ def fetch_deploy_status(config):
     fetch_req = _do_status_http_request(harold_base_url)
 
     # give the request a few seconds and bail out if it takes too long
-    timeout = reactor.callLater(TIMEOUT, fetch_req.cancel)
+    timeout = reactor.callLater(TIMEOUT_SECONDS, fetch_req.cancel)
     def cancel_timeout(passthrough):
         if timeout.active():
             timeout.cancel()
