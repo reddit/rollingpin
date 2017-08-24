@@ -215,7 +215,7 @@ def _add_deploy_arguments(config, parser):
     )
 
 
-def make_arg_parser(config, profile=None):
+def parse_args(config, raw_args=None, profile=None):
     prog = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(
         prog="{} {}".format(prog, profile) if profile else prog,
@@ -228,7 +228,15 @@ def make_arg_parser(config, profile=None):
     _add_flags(config, parser)
     _add_deploy_arguments(config, parser)
 
-    return parser
+    if not raw_args:
+        parser.print_help()
+        sys.exit(0)
+
+    args = parser.parse_args(args=raw_args)
+    for target in args.restart:
+        args.commands.append(["restart", target])
+
+    return args
 
 
 def construct_canonical_commandline(config, args):

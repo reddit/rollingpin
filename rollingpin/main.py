@@ -8,7 +8,7 @@ from twisted.internet.task import react
 
 from .elasticsearch import enable_elastic_search_notifications
 from .args import (
-    make_arg_parser,
+    parse_args,
     construct_canonical_commandline,
     make_profile_parser,
     build_action_summary,
@@ -125,11 +125,7 @@ def _load_configuration(profile_name, profile_directory=PROFILE_DIRECTORY):
 
 
 def _parse_args(config, raw_args, initial_parser):
-    arg_parser = make_arg_parser(config, initial_parser)
-    if not raw_args:
-        arg_parser.print_help()
-        sys.exit(0)
-    args = arg_parser.parse_args(args=raw_args)
+    args = parse_args(config, raw_args, initial_parser)
     args.original = construct_canonical_commandline(config, args)
     return args
 
@@ -171,8 +167,6 @@ def _main(reactor, *raw_args):
 
     config = _load_configuration(args.profile, PROFILE_DIRECTORY)
     args = _parse_args(config, raw_args, args.profile)
-    for target in args.restart:
-        args.commands.append(["restart", target])
 
     if args.test:
         print build_action_summary(config, args)
