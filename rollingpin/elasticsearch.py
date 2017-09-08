@@ -36,7 +36,7 @@ class JSONBodyProducer(object):
 
 class ElasticSearchNotifier(object):
 
-    def __init__(self, config, components, hosts, command_line, word):
+    def __init__(self, config, components, hosts, command_line, word, profile):
         self.logger = logging.getLogger(__name__)
         base_url = config["elasticsearch"]["endpoint"]
         index = config["elasticsearch"]["index"]
@@ -44,6 +44,7 @@ class ElasticSearchNotifier(object):
         self.hosts = hosts
         self.command_line = command_line
         self.deploy_name = word
+        self.profile = profile
         self.endpoint = "https://%s/%s/%s" % (base_url, index, index_type)
         self.components = components
 
@@ -102,6 +103,7 @@ class ElasticSearchNotifier(object):
         timestamp_in_milliseconds = int(time.time()) * 1000
         return {
             'id': self.deploy_name,
+            'profile': self.profile,
             'timestamp': timestamp_in_milliseconds,
             'components': self.components,
             'deployer': getpass.getuser(),
@@ -115,6 +117,7 @@ class ElasticSearchNotifier(object):
         timestamp_in_milliseconds = int(time.time()) * 1000
         return {
             'id': self.deploy_name,
+            'profile': self.profile,
             'timestamp': timestamp_in_milliseconds,
             'reason': reason,
             'components': self.components,
@@ -125,6 +128,7 @@ class ElasticSearchNotifier(object):
         timestamp_in_milliseconds = int(time.time()) * 1000
         return {
             'id': self.deploy_name,
+            'profile': self.profile,
             'timestamp': timestamp_in_milliseconds,
             'components': self.components,
             'event_type': 'deploy.end',
@@ -156,9 +160,9 @@ class ElasticSearchNotifier(object):
 
 
 def enable_elastic_search_notifications(config, event_bus, components, hosts,
-                                        command_line, word):
+                                        command_line, word, profile):
     notifier = ElasticSearchNotifier(
-        config, components, hosts, command_line, word)
+        config, components, hosts, command_line, word, profile)
     event_bus.register({
         "build.sync": notifier.on_build_sync,
         "deploy.begin": notifier.on_deploy_start,

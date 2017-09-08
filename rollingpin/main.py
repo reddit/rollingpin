@@ -164,12 +164,13 @@ def _main(reactor, *raw_args):
         initial_parser.print_help()
         sys.exit(0)
     args, raw_args = initial_parser.parse_known_args(args=raw_args)
+    profile = args.profile
 
-    config = _load_configuration(args.profile, PROFILE_DIRECTORY)
-    args = _parse_args(config, raw_args, args.profile)
+    config = _load_configuration(profile, PROFILE_DIRECTORY)
+    args = _parse_args(config, raw_args, profile)
+    print build_action_summary(config, args)
 
     if args.test:
-        print build_action_summary(config, args)
         sys.exit(0)
 
     hosts = yield _select_hosts(config, args)
@@ -190,7 +191,7 @@ def _main(reactor, *raw_args):
 
     if config["elasticsearch"]["endpoint"]:
         enable_elastic_search_notifications(
-            config, event_bus, args.components, hosts, args.original, word)
+            config, event_bus, args.components, hosts, args.original, word, profile)
 
     if os.isatty(sys.stdout.fileno()):
         HeadfulFrontend(event_bus, hosts,

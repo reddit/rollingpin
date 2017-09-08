@@ -236,6 +236,9 @@ def parse_args(config, raw_args=None, profile=None):
     for target in args.restart:
         args.commands.append(["restart", target])
 
+    if args.components == ["none"]:
+        args.components = []
+
     return args
 
 
