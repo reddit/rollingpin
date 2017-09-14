@@ -228,7 +228,7 @@ def parse_args(config, raw_args=None, profile=None):
     _add_flags(config, parser)
     _add_deploy_arguments(config, parser)
 
-    if not raw_args:
+    if not raw_args and not profile:
         parser.print_help()
         sys.exit(0)
 
