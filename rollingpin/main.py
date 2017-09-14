@@ -7,7 +7,12 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import react
 
 from .elasticsearch import enable_elastic_search_notifications
-from .args import make_arg_parser, construct_canonical_commandline
+from .args import (
+    parse_args,
+    construct_canonical_commandline,
+    make_profile_parser,
+    build_action_summary,
+)
 from .config import (
     coerce_and_validate_config,
     ConfigurationError,
@@ -31,6 +36,7 @@ from .providers import get_provider, UnknownProviderError
 from .utils import random_word, interleaved
 
 
+PROFILE_DIRECTORY = "/etc/rollingpin.d/"
 CONFIG_SPEC = {
     "deploy": {
         "log-directory": Option(str),
@@ -39,6 +45,9 @@ CONFIG_SPEC = {
         "default-sleeptime": Option(int),
         "default-parallel": Option(int),
         "execution-timeout": Option(int, default=0),
+        "default-hosts": Option(str, default=[]),
+        "default-components": Option(str, default=[]),
+        "default-restart": Option(str, default=[]),
     },
 
     "harold": OptionalSection({
@@ -86,11 +95,12 @@ def load_provider(provider_type, config_parser):
     return provider_cls(provider_config)
 
 
-def _load_configuration():
+def _load_configuration(profile_name, profile_directory=PROFILE_DIRECTORY):
     config_parser = ConfigParser.ConfigParser()
     try:
         config_parser.read([
             "/etc/rollingpin.ini",
+            "{}/{}.ini".format(profile_directory, profile_name),
             os.path.expanduser("~/.rollingpin.ini"),
         ])
     except ConfigParser.Error as e:
@@ -114,12 +124,8 @@ def _load_configuration():
     return config
 
 
-def _parse_args(config, raw_args):
-    arg_parser = make_arg_parser(config)
-    if not raw_args:
-        arg_parser.print_help()
-        sys.exit(0)
-    args = arg_parser.parse_args(args=raw_args)
+def _parse_args(config, raw_args, initial_parser):
+    args = parse_args(config, raw_args, initial_parser)
     args.original = construct_canonical_commandline(config, args)
     return args
 
@@ -153,9 +159,20 @@ def _main(reactor, *raw_args):
     # the cypher used for SSH connections. we don't care and can't do anything
     # about it for now.
     warnings.simplefilter("ignore")
+    initial_parser = make_profile_parser(PROFILE_DIRECTORY)
+    if not raw_args:
+        initial_parser.print_help()
+        sys.exit(0)
+    args, raw_args = initial_parser.parse_known_args(args=raw_args)
+    profile = args.profile
 
-    config = _load_configuration()
-    args = _parse_args(config, raw_args)
+    config = _load_configuration(profile, PROFILE_DIRECTORY)
+    args = _parse_args(config, raw_args, profile)
+    print build_action_summary(config, args)
+
+    if args.test:
+        sys.exit(0)
+
     hosts = yield _select_hosts(config, args)
 
     # set up event listeners
@@ -174,7 +191,7 @@ def _main(reactor, *raw_args):
 
     if config["elasticsearch"]["endpoint"]:
         enable_elastic_search_notifications(
-            config, event_bus, args.components, hosts, args.original, word)
+            config, event_bus, args.components, hosts, args.original, word, profile)
 
     if os.isatty(sys.stdout.fileno()):
         HeadfulFrontend(event_bus, hosts,
