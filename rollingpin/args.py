@@ -184,6 +184,9 @@ def _add_deploy_arguments(config, parser):
     )
 
     default_components = config["deploy"].get("default-components", [])
+    if "," in default_components:
+        default_components = default_components.split(",")
+
     if not isinstance(default_components, list):
         default_components = [default_components]
 
