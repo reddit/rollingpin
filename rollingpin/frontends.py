@@ -17,6 +17,7 @@ from twisted.internet.protocol import Protocol
 from twisted.internet.stdio import StandardIO
 
 from .deploy import AbortDeploy
+from .status import fetch_deploy_status
 from .utils import sorted_nicely
 
 
@@ -244,22 +245,51 @@ class StdioListener(Protocol):
 
 class HeadfulFrontend(HeadlessFrontend):
 
-    def __init__(self, event_bus, hosts, verbose_logging, pause_after):
+    def __init__(self, event_bus, hosts, verbose_logging, pause_after, config):
         HeadlessFrontend.__init__(self, event_bus, hosts, verbose_logging)
 
         self.console_input = StdioListener()
         StandardIO(self.console_input)
 
         event_bus.register({
+            "deploy.precheck": self.on_precheck,
             "deploy.sleep": self.on_sleep,
             "deploy.enqueue": self.on_enqueue,
         })
 
+        self.config = config
         self.pause_after = pause_after
         self.enqueued_hosts = 0
 
     def on_sleep(self, host, count):
         print colorize("*** sleeping %d..." % count, Color.BOLD(Color.BLUE))
+
+    @inlineCallbacks
+    def on_precheck(self):
+        status = yield fetch_deploy_status(self.config)
+
+        bad_time = status["time_status"] not in ("work_time", "cleanup_time")
+        deploy_in_progress = status["busy"]
+
+        if bad_time or deploy_in_progress:
+            print colorize("*** WARNING ***", Color.BOLD(Color.RED))
+
+            reasons = []
+            if bad_time:
+                reasons.append("it is currently outside of normal deploy hours")
+            if deploy_in_progress:
+                reasons.append("another deploy is currently happening")
+
+            print "This may not be a good time to do a deploy:",
+            print ", and ".join(colorize(r, Color.BOLD(Color.YELLOW)) for r in reasons) + ".",
+            print "Are you sure you want to proceed with the deploy? [y/n]"
+
+            while True:
+                char = yield self.console_input.read_character()
+                if char == "y":
+                    break
+                elif char == "n":
+                    raise AbortDeploy("cancelled")
 
     @inlineCallbacks
     def on_enqueue(self, deploys):

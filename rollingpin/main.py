@@ -194,8 +194,8 @@ def _main(reactor, *raw_args):
             config, event_bus, args.components, hosts, args.original, word, profile)
 
     if os.isatty(sys.stdout.fileno()):
-        HeadfulFrontend(event_bus, hosts,
-                        args.verbose_logging, args.pause_after)
+        HeadfulFrontend(event_bus, hosts, args.verbose_logging,
+                        args.pause_after, config)
     else:
         HeadlessFrontend(event_bus, hosts, args.verbose_logging)
 
