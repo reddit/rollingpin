@@ -168,7 +168,9 @@ def _main(reactor, *raw_args):
 
     config = _load_configuration(profile, PROFILE_DIRECTORY)
     args = _parse_args(config, raw_args, profile)
-    print build_action_summary(config, args)
+
+    if not args.list_hosts:
+        print build_action_summary(config, args)
 
     if args.test:
         sys.exit(0)
