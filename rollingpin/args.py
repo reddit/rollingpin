@@ -143,9 +143,15 @@ def _add_flags(config, parser):
         dest="dangerously_fast",
     )
 
+    options_group.add_argument(
+        "--no-harold",
+        action="store_false",
+        default=True,
+        dest="deprecated_notify_harold",
+    )
     if config["harold"]["base-url"]:
         options_group.add_argument(
-            "--no-harold",
+            "--really-no-harold",
             action="store_false",
             default=True,
             help="don't notify harold of deploy status",
@@ -153,7 +159,7 @@ def _add_flags(config, parser):
         )
     else:
         options_group.add_argument(
-            "--no-harold",
+            "--really-no-harold",
             action="store_false",
             default=False,
             help=argparse.SUPPRESS,
@@ -239,6 +245,9 @@ def parse_args(config, raw_args=None, profile=None):
     if args.components == ["none"]:
         args.components = []
 
+    if not args.deprecated_notify_harold:
+        print "--no-harold is deprecated now that profiles should direct to the correct harold"
+
     return args
 
 
@@ -267,7 +276,7 @@ def construct_canonical_commandline(config, args):
         arg_list.append("--timeout=%d" % args.timeout)
 
     if config["harold"]["base-url"] and not args.notify_harold:
-        arg_list.append("--no-harold")
+        arg_list.append("--really-no-harold")
 
     if args.verbose_logging:
         arg_list.append("--verbose")
