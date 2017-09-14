@@ -197,14 +197,10 @@ def _add_deploy_arguments(config, parser):
         dest="components",
     )
 
-    default_restart = config["deploy"].get("default-restart", [])
-    if not isinstance(default_restart, list):
-        default_restart = [default_restart]
-
     deploy_group.add_argument(
         "-r",
         action="append",
-        default=default_restart,
+        default=[],
         help="whom to restart",
         metavar="TARGET",
         dest="restart",
@@ -239,6 +235,14 @@ def parse_args(config, raw_args=None, profile=None):
         sys.exit(0)
 
     args = parser.parse_args(args=raw_args)
+
+    if not args.restart:
+        default_restart = config["deploy"].get("default-restart", [])
+        if not isinstance(default_restart, list):
+            default_restart = [default_restart]
+
+        args.restart = default_restart
+
     for target in args.restart:
         args.commands.append(["restart", target])
 
