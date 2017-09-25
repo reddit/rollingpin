@@ -140,18 +140,18 @@ def _select_hosts(config, args):
         print_error("could not fetch host list: {}", e)
         sys.exit(1)
 
-    hosts = interleaved(all_hosts_unsorted, key=lambda h: h.pool)
-
     try:
         full_hostlist = resolve_hostlist(
-            args.host_refs, hosts, config["aliases"])
+            args.host_refs, all_hosts_unsorted, config["aliases"])
         selected_hosts = restrict_hostlist(
             full_hostlist, args.start_at, args.stop_before)
     except HostlistError as e:
         print_error("{}", e)
         sys.exit(1)
 
-    returnValue(selected_hosts)
+    hosts = interleaved(selected_hosts, key=lambda h: h.pool)
+
+    returnValue(hosts)
 
 
 @inlineCallbacks
