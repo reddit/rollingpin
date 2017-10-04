@@ -228,6 +228,13 @@ class _CommandChannel(SSHChannel):
         self.reason = SignalError(signal)
 
     def closed(self):
+
+        # The `finished` callback may have been already called if there was a
+        # timeout issue.  If we try to call it again, it will fail loudly with
+        # a twisted `AlreadyCalledError` exception.
+        if self.finished.called:
+            return
+
         if not self.reason:
             self.result.seek(0)
             try:
