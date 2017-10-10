@@ -270,8 +270,9 @@ class HeadfulFrontend(HeadlessFrontend):
 
         bad_time = status["time_status"] not in ("work_time", "cleanup_time")
         deploy_in_progress = status["busy"]
+        hold = status.get("hold")
 
-        if bad_time or deploy_in_progress:
+        if bad_time or deploy_in_progress or hold:
             print colorize("*** WARNING ***", Color.BOLD(Color.RED))
 
             reasons = []
@@ -279,6 +280,8 @@ class HeadfulFrontend(HeadlessFrontend):
                 reasons.append("it is currently outside of normal deploy hours")
             if deploy_in_progress:
                 reasons.append("another deploy is currently happening")
+            if hold:
+                reasons.append("deploys are on hold: " + hold)
 
             print "This may not be a good time to do a deploy:",
             print ", and ".join(colorize(r, Color.BOLD(Color.YELLOW)) for r in reasons) + ".",
