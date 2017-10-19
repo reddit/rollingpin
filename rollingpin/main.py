@@ -6,6 +6,7 @@ import warnings
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import react
 
+from . import simpleflake
 from .elasticsearch import enable_elastic_search_notifications
 from .args import (
     parse_args,
@@ -33,7 +34,7 @@ from .hostsources import HostSourceError
 from .graphite import enable_graphite_notifications
 from .log import log_to_file
 from .providers import get_provider, UnknownProviderError
-from .utils import random_word, interleaved
+from .utils import interleaved, b36encode
 
 
 PROFILE_DIRECTORY = "/etc/rollingpin.d/"
@@ -180,7 +181,7 @@ def _main(reactor, *raw_args):
     # set up event listeners
     event_bus = EventBus()
 
-    word = random_word(config["deploy"]["wordlist"])
+    word = b36encode(simpleflake.simpleflake())
     log_path = log_to_file(config, word)
 
     if args.notify_harold:

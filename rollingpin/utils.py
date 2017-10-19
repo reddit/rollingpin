@@ -38,20 +38,6 @@ def sleep(seconds):
 valid_push_word = re.compile("^[a-z:]{5,}$")
 
 
-def random_word(wordlist_path):
-    """Return a random word chosen from a given dictionary file."""
-    file_size = os.path.getsize(wordlist_path)
-
-    with open(wordlist_path, "r") as wordlist:
-        word = ""
-        while not valid_push_word.match(word):
-            position = random.randint(1, file_size)
-            wordlist.seek(position)
-            wordlist.readline()
-            word = unicode(wordlist.readline().rstrip("\n"), "utf-8")
-    return word
-
-
 def sorted_nicely(iterable):
     """Sort strings with embedded numbers in them the way humans would expect.
 
@@ -108,3 +94,26 @@ def interleaved(items, key):
     for items in groups_by_size[1:]:
         _distribute_into(result, items)
     return result
+
+
+# https://stackoverflow.com/a/1181922
+def b36encode(number, alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
+    """Convert an integer to a base36 string."""
+    if not isinstance(number, (int, long)):
+        raise TypeError('number must be an integer')
+
+    base36 = ''
+    sign = ''
+
+    if number < 0:
+        sign = '-'
+        number = -number
+
+    if 0 <= number < len(alphabet):
+        return sign + alphabet[number]
+
+    while number != 0:
+        number, i = divmod(number, len(alphabet))
+        base36 = alphabet[i] + base36
+
+    return sign + base36
