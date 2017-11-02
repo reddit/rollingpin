@@ -1,5 +1,15 @@
-build:
-  image: python:2.7
-  commands:
-    - pip install -r test_requirements.txt
-    - scripts/ci/test.sh
+pipeline:
+  build:
+    image: python:2.7
+    commands:
+      - pip install -r test_requirements.txt
+      - scripts/ci/test.sh
+
+  notify:
+    image: plugins/slack
+    channel: infra-salon
+    secrets: [ SLACK_WEBHOOK ]
+    when:
+      event: [ push ]
+      branch: master
+      status: [ success, failure ]
