@@ -20,12 +20,14 @@ class TestElasticSearchNotifier(unittest.TestCase):
                 "type": "mytype"
             }
         }
+        self.profile = "example-profile"
         self.es_notifier_args = [
             self.config,
             self.components,
             self.hosts,
             self.command,
             self.deploy_word,
+            self.profile,
         ]
         self.es_notifier = ElasticSearchNotifier(*self.es_notifier_args)
 
@@ -71,7 +73,8 @@ class TestElasticSearchNotifier(unittest.TestCase):
             'components': self.components,
             'deployer': deployer,
             'timestamp': 1000,
-            'id': self.deploy_word
+            'id': self.deploy_word,
+            'profile': 'example-profile',
         }
         self.assertEquals(deploy_start_doc, expected_deploy_start_doc)
 
@@ -83,7 +86,8 @@ class TestElasticSearchNotifier(unittest.TestCase):
             'reason': 'farrabbitssss',
             'components': self.components,
             'id': self.deploy_word,
-            'event_type': 'deploy.abort'
+            'event_type': 'deploy.abort',
+            'profile': 'example-profile',
         }
         self.assertEquals(deploy_abort_doc, expected_deploy_abort_doc)
 
@@ -93,6 +97,7 @@ class TestElasticSearchNotifier(unittest.TestCase):
             'timestamp': 1000,
             'components': self.components,
             'id': self.deploy_word,
-            'event_type': 'deploy.end'
+            'event_type': 'deploy.end',
+            'profile': 'example-profile',
         }
         self.assertEquals(deploy_end_doc, expected_deploy_end_doc)
