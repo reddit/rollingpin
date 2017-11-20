@@ -96,8 +96,8 @@ class TestArgumentParsing(unittest.TestCase):
         args = parse_args(self.config, ["-h", "a"])
         self.assertTrue(args.notify_harold)
 
-    def test_harold_flagged(self):
-        args = parse_args(self.config, ["-h", "a", "--no-harold"])
+    def test_harold_disabled(self):
+        args = parse_args(self.config, ["-h", "a", "--really-no-harold"])
         self.assertFalse(args.notify_harold)
 
     # -v / --verbose
@@ -267,10 +267,10 @@ class TestArgumentReconstruction(unittest.TestCase):
             "-h host --parallel=5 --pauseafter=2 --timeout=60", canonical)
 
     def test_no_harold(self):
-        args = parse_args(self.config, ["-h", "host", "--no-harold"])
+        args = parse_args(self.config, ["-h", "host", "--really-no-harold"])
         canonical = construct_canonical_commandline(self.config, args)
         self.assertEqual(
-            "-h host --parallel=5 --timeout=60 --no-harold", canonical)
+            "-h host --parallel=5 --timeout=60 --really-no-harold", canonical)
 
     def test_single_deploy(self):
         args = parse_args(self.config, ["-h", "host", "-d", "component"])
