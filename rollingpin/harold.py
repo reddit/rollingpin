@@ -72,16 +72,18 @@ class HaroldNotifier(object):
         self.log = logging.getLogger(__name__)
         self.harold = harold
         self.word = word
-        self.hosts = dict.fromkeys(hosts, False)
         self.command_line = command_line
         self.log_path = log_path
+        self.total_hosts = len(hosts)
         self.completed_hosts = 0
+        self.failed_hosts = []
 
         event_bus.register({
             "deploy.begin": self.on_deploy_begin,
             "deploy.abort": self.on_deploy_abort,
             "deploy.end": self.on_deploy_end,
             "host.end": self.on_host_end,
+            "host.abort": self.on_host_abort,
         })
 
     @inlineCallbacks
@@ -92,7 +94,7 @@ class HaroldNotifier(object):
                 "who": getpass.getuser(),
                 "args": self.command_line,
                 "log_path": self.log_path,
-                "count": len(self.hosts),
+                "count": self.total_hosts,
             })
 
     @inlineCallbacks
@@ -108,6 +110,7 @@ class HaroldNotifier(object):
         with swallow_exceptions("harold", self.log):
             yield self.harold.make_request("deploy/end", {
                 "id": self.word,
+                "failed_hosts": ",".join(host.name for host in self.failed_hosts),
             })
 
     @inlineCallbacks
@@ -120,6 +123,9 @@ class HaroldNotifier(object):
                 "host": host,
                 "index": self.completed_hosts,
             })
+
+    def on_host_abort(self, host, error, should_be_alive):
+        self.failed_hosts.append(host)
 
 
 def enable_harold_notifications(

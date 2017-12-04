@@ -140,7 +140,7 @@ class HeadlessFrontend(object):
         if host in self.host_results:
             self.host_results[host]['status'] = "success"
             self.host_results[host]['results'] = results
-            print colorize("*** %d%% done" % self.percent_complete(), Color.GREEN)  # noqa
+            self._print_percent_complete()
 
     def on_host_abort(self, host, error, should_be_alive):
         if host in self.host_results:
@@ -148,37 +148,17 @@ class HeadlessFrontend(object):
                 self.host_results[host]['status'] = "error"
             else:
                 self.host_results[host]['status'] = "warning"
+        self._print_percent_complete()
+
+    def _print_percent_complete(self):
+        print colorize("*** %d%% done" % self.percent_complete(), Color.GREEN)
 
     def on_deploy_abort(self, reason):
         print colorize(
             "*** deploy aborted: %s" % reason, Color.BOLD(Color.RED))
 
     def on_deploy_end(self):
-        by_result = collections.defaultdict(list)
-        for host, result in self.host_results.iteritems():
-            by_result[result['status']].append(host)
-
         print colorize("*** deploy complete!", Color.BOLD(Color.GREEN))
-
-        if by_result["warning"]:
-            warning_hosts = by_result["warning"]
-            print("*** encountered errors on %d possibly terminated "
-                  "hosts:" % len(warning_hosts))
-            print "      ", " ".join(
-                colorize(host, Color.YELLOW)
-                for host in sorted_nicely(host.name for host in warning_hosts))
-
-        if by_result["error"]:
-            error_hosts = by_result["error"]
-            print("*** encountered unexpected errors on %d "
-                  "healthy hosts:" % len(error_hosts))
-            print "      ", " ".join(
-                colorize(host, Color.RED)
-                for host in sorted_nicely(host.name for host in error_hosts))
-
-        successful_hosts = len(by_result["success"])
-        print "*** processed %d hosts successfully" % successful_hosts
-
         elapsed = time.time() - self.start_time
         print "*** elapsed time: %d seconds" % elapsed
 
