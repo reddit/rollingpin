@@ -41,10 +41,12 @@ class MockTransportConnection(TransportConnection):
             log.debug("MOCK: git checkout origin/master")
         elif command == "restart":
             log.debug("MOCK: /sbin/initctl emit restart")
+        elif command == "wait-until-components-ready":
+            log.debug("MOCK: /sbin/initctl emit wait-until-components-ready")
+            yield sleep(random.random() * 1)
         else:
             raise CommandFailed("unknown command %r" % command)
 
-        yield sleep(random.random() * 3)
         returnValue(result)
 
     def disconnect(self):
