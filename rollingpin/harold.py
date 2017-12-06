@@ -125,7 +125,8 @@ class HaroldNotifier(object):
             })
 
     def on_host_abort(self, host, error, should_be_alive):
-        self.failed_hosts.append(host)
+        if should_be_alive:
+            self.failed_hosts.append(host)
 
 
 def enable_harold_notifications(
