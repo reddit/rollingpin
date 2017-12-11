@@ -38,7 +38,7 @@ def sleep(seconds):
 valid_push_word = re.compile("^[a-z:]{5,}$")
 
 
-def sorted_nicely(iterable):
+def sorted_nicely(iterable, key):
     """Sort strings with embedded numbers in them the way humans would expect.
 
     http://nedbatchelder.com/blog/200712/human_sorting.html#comments
@@ -51,8 +51,8 @@ def sorted_nicely(iterable):
         except ValueError:
             return maybe_int
 
-    def alphanum_key(key):
-        return [tryint(c) for c in re.split("([0-9]+)", key)]
+    def alphanum_key(item):
+        return [tryint(c) for c in re.split("([0-9]+)", key(item))]
 
     return sorted(iterable, key=alphanum_key)
 

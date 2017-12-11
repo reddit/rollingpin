@@ -34,7 +34,7 @@ from .hostsources import HostSourceError
 from .graphite import enable_graphite_notifications
 from .log import log_to_file
 from .providers import get_provider, UnknownProviderError
-from .utils import interleaved, b36encode
+from .utils import interleaved, b36encode, sorted_nicely
 
 
 PROFILE_DIRECTORY = "/etc/rollingpin.d/"
@@ -140,9 +140,11 @@ def _select_hosts(config, args):
         print_error("could not fetch host list: {}", e)
         sys.exit(1)
 
+    all_hosts = sorted_nicely(all_hosts_unsorted, key=lambda h: h.name)
+
     try:
         full_hostlist = resolve_hostlist(
-            args.host_refs, all_hosts_unsorted, config["aliases"])
+            args.host_refs, all_hosts, config["aliases"])
         selected_hosts = restrict_hostlist(
             full_hostlist, args.start_at, args.stop_before)
     except HostlistError as e:

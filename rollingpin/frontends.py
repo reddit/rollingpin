@@ -18,7 +18,6 @@ from twisted.internet.stdio import StandardIO
 
 from .deploy import AbortDeploy
 from .status import fetch_deploy_status
-from .utils import sorted_nicely
 
 
 class Color(object):
