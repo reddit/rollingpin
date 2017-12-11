@@ -3,9 +3,6 @@ import os
 import sys
 
 
-PAUSEAFTER_DEFAULT = 1
-
-
 class ExtendList(argparse.Action):
     def __call__(self, parser, namespace, values, option_string):
         list_to_extend = getattr(namespace, self.dest)
@@ -87,15 +84,6 @@ def _add_iteration_arguments(config, parser):
         dest="sleeptime",
     )
 
-    iteration_group.add_argument(
-        "--pauseafter",
-        default=PAUSEAFTER_DEFAULT,
-        type=int,
-        help="pause after COUNT hosts",
-        metavar="COUNT",
-        dest="pause_after",
-    )
-
     timeout_default = config["deploy"]["execution-timeout"]
     iteration_group.add_argument(
         "--timeout",
@@ -137,9 +125,7 @@ def _add_flags(config, parser):
         "--dangerously-fast",
         action="store_true",
         default=False,
-        help=("Don't wait on service restarts."
-              "VERY dangerous when combined with a high parallel host count"
-              ),
+        help="Deploy to all servers immediately and don't wait on restarts.",
         dest="dangerously_fast",
     )
 
@@ -275,9 +261,6 @@ def construct_canonical_commandline(config, args):
     sleeptime_default = config["deploy"]["default-sleeptime"]
     if args.sleeptime != sleeptime_default:
         arg_list.append("--sleeptime=%d" % args.sleeptime)
-
-    if args.pause_after != PAUSEAFTER_DEFAULT:
-        arg_list.append("--pauseafter=%d" % args.pause_after)
 
     if args.timeout is not None:
         arg_list.append("--timeout=%d" % args.timeout)

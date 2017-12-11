@@ -73,15 +73,6 @@ class TestArgumentParsing(unittest.TestCase):
         args = parse_args(self.config, ["-h", "a", "--stopbefore", "host"])
         self.assertEqual(args.stop_before, "host")
 
-    # --pauseafter
-    def test_pauseafter_not_set(self):
-        args = parse_args(self.config, ["-h", "a"])
-        self.assertEqual(args.pause_after, 1)
-
-    def test_pauseafter_number(self):
-        args = parse_args(self.config, ["-h", "a", "--pauseafter", "5"])
-        self.assertEqual(args.pause_after, 5)
-
     # --list
     def test_list_default(self):
         args = parse_args(self.config, ["-h", "a"])
@@ -259,12 +250,6 @@ class TestArgumentReconstruction(unittest.TestCase):
         canonical = construct_canonical_commandline(self.config, args)
         self.assertEqual(
             "-h host --parallel=5 --sleeptime=5 --timeout=60", canonical)
-
-    def test_pauseafter(self):
-        args = parse_args(self.config, ["-h", "host", "--pauseafter", "2"])
-        canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual(
-            "-h host --parallel=5 --pauseafter=2 --timeout=60", canonical)
 
     def test_no_harold(self):
         args = parse_args(self.config, ["-h", "host", "--really-no-harold"])

@@ -197,7 +197,6 @@ class Deployer(object):
                         ["restart" in val for val in commands])
                     if restarting_component and not self.dangerously_fast:
                         commands.append(["wait-until-components-ready"])
-
                 except Exception:
                     traceback.print_exc()
                     raise DeployError("unexpected error in sync/build")
@@ -227,7 +226,7 @@ class Deployer(object):
                 host_deploys.append(deferred)
 
                 yield self.event_bus.trigger(
-                    "deploy.enqueue", deploys=host_deploys)
+                    "deploy.enqueue", host=host, deferred=deferred)
             yield DeferredList(host_deploys)
         except (DeployError, AbortDeploy, TransportError) as e:
             yield self.abort(str(e))

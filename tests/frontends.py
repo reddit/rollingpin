@@ -17,7 +17,7 @@ class TestFrontends(unittest.TestCase):
                 result={'components': {'foo': {'abcdef': 1}}},
             ),
         ]
-        host_results = {host: {'status': "success", 'results': results}}
+        host_results = {host: {'status': "complete", 'output': results}}
 
         # Generate Report
         report = generate_component_report(host_results)
@@ -44,7 +44,7 @@ class TestFrontends(unittest.TestCase):
                 result={'components': {'foo': {'abcdef': 1}}},
             ),
         ]
-        host_results = {host: {'status': "success", 'results': results}}
+        host_results = {host: {'status': "complete", 'output': results}}
 
         # Generate Report
         report = generate_component_report(host_results)
@@ -67,7 +67,7 @@ class TestFrontends(unittest.TestCase):
                 result={},
             ),
         ]
-        host_results = {host: {'status': "success", 'results': results}}
+        host_results = {host: {'status': "complete", 'output': results}}
 
         # Generate Report
         report = generate_component_report(host_results)
@@ -85,8 +85,8 @@ class TestFrontends(unittest.TestCase):
             ),
         ]
         host_results = {
-            Host.from_hostname('test'): {'status': "success", 'results': results},
-            Host.from_hostname('test-2'): {'status': "success", 'results': results},
+            Host.from_hostname('test'): {'status': "complete", 'output': results},
+            Host.from_hostname('test-2'): {'status': "complete", 'output': results},
         }
 
         # Generate Report

@@ -2,6 +2,8 @@ from __future__ import division
 
 import collections
 import logging
+import math
+import re
 import sys
 import termios
 import time
@@ -18,7 +20,6 @@ from twisted.internet.stdio import StandardIO
 
 from .deploy import AbortDeploy
 from .status import fetch_deploy_status
-from .utils import sorted_nicely
 
 
 class Color(object):
@@ -68,7 +69,7 @@ def generate_component_report(host_results):
     """Aggregate a list of results from the `components` deploy command."""
     report = collections.defaultdict(collections.Counter)
     for host, results in host_results.iteritems():
-        for result in results.get('results', []):
+        for result in results.get('output', []):
             if result.command[0] != 'components':
                 continue
             # Example result.result['components']:
@@ -82,6 +83,12 @@ def generate_component_report(host_results):
                 for sha, count in sha_counts.iteritems():
                     report[component][sha] += count
     return report
+
+
+def calculate_percent_complete(hosts):
+    completed = sum(1 for state in hosts.itervalues()
+                    if state["status"] == "complete")
+    return int((completed / len(hosts)) * 100)
 
 
 class HeadlessFrontend(object):
@@ -106,13 +113,14 @@ class HeadlessFrontend(object):
         root = logging.getLogger()
         root.addHandler(self.log_handler)
 
-        self.host_results = {k: {} for k in hosts}
+        self.hosts = {host: {"status": "pending"} for host in hosts}
         self.start_time = None
 
         event_bus.register({
             "deploy.begin": self.on_deploy_begin,
             "deploy.end": self.on_deploy_end,
             "deploy.abort": self.on_deploy_abort,
+            "deploy.enqueue": self.on_enqueue,
             "host.end": self.on_host_end,
             "host.abort": self.on_host_abort,
         })
@@ -127,31 +135,35 @@ class HeadlessFrontend(object):
         self.start_time = time.time()
         print colorize("*** starting deploy", Color.BOLD(Color.GREEN))
 
-    def count_hosts(self):
-        return len(self.host_results)
+    @inlineCallbacks
+    def on_enqueue(self, host, deferred):
+        # this is to trick python into thinking this is a generator so it
+        # works properly with @inlineCallbacks
+        if False:
+            yield
 
-    def count_completed_hosts(self):
-        return sum(1 for v in self.host_results.itervalues() if v)
-
-    def percent_complete(self):
-        return int((self.count_completed_hosts() / self.count_hosts()) * 100)
+        self.hosts[host]["status"] = "deploying"
+        self.hosts[host]["deferred"] = deferred
 
     def on_host_end(self, host, results):
-        if host in self.host_results:
-            self.host_results[host]['status'] = "success"
-            self.host_results[host]['results'] = results
+        if host in self.hosts:
+            self.hosts[host]["status"] = "complete"
+            self.hosts[host]["result"] = "success"
+            self.hosts[host]["output"] = results
+            del self.hosts[host]["deferred"]
             self._print_percent_complete()
 
     def on_host_abort(self, host, error, should_be_alive):
-        if host in self.host_results:
-            if should_be_alive:
-                self.host_results[host]['status'] = "error"
-            else:
-                self.host_results[host]['status'] = "warning"
-        self._print_percent_complete()
+        if host in self.hosts:
+            self.hosts[host]["status"] = "complete"
+            self.hosts[host]["result"] = "aborted"
+            self.hosts[host]["should_be_alive"] = should_be_alive
+            del self.hosts[host]["deferred"]
+            self._print_percent_complete()
 
     def _print_percent_complete(self):
-        print colorize("*** %d%% done" % self.percent_complete(), Color.GREEN)
+        percent_complete = calculate_percent_complete(self.hosts)
+        print colorize("*** %d%% done" % percent_complete, Color.GREEN)
 
     def on_deploy_abort(self, reason):
         print colorize(
@@ -162,7 +174,7 @@ class HeadlessFrontend(object):
         elapsed = time.time() - self.start_time
         print "*** elapsed time: %d seconds" % elapsed
 
-        report = generate_component_report(self.host_results)
+        report = generate_component_report(self.hosts)
         if report:
             # Pad the columns to reasonable max widths so the tabs will line up
             # and be readable.  For SHAs, we expect 40 characters.  For
@@ -223,9 +235,207 @@ class StdioListener(Protocol):
             self.disable_echo()
 
 
+OPTION_RE = re.compile(r"^[^[]*\[([a-z])\][^\]]*$")
+
+
+@inlineCallbacks
+def prompt_choice(console_input, options):
+    assert len(options) >= 2
+
+    print
+
+    letters = []
+    for option in options:
+        m = OPTION_RE.match(option)
+        assert m, "option %r is not validly formatted!!!" % (option)
+        letter = m.group(1)
+        assert letter not in letters, "two options can't have the same letter!"
+        letters.append(letter)
+
+        print ("* " + option[:m.start(1)] +
+               colorize(letter, Color.BOLD(Color.CYAN)) +
+               option[m.end(1):])
+
+    print
+    colorized = [colorize(letter, Color.BOLD(Color.CYAN)) for letter in letters]
+    print "Press " + ", ".join(colorized[:-1]) + ", or " + colorized[-1] + "."
+
+    while True:
+        character = yield console_input.read_character()
+        if character in letters:
+            returnValue(character)
+
+
+@inlineCallbacks
+def prompt_declaration(console_input, required_declaration):
+    print
+    print 'To continue, type "%s" at the prompt or press Ctrl+C to abort.' % required_declaration
+    print
+    while True:
+        entered_declaration = yield console_input.raw_input("> ")
+        if entered_declaration.lower() == required_declaration.lower():
+            returnValue(None)
+
+
+class DeployStrategy(object):
+    def is_complete(self, hosts):
+        raise NotImplementedError
+
+    def get_next_strategy(self, hosts):
+        raise NotImplementedError
+
+
+class FirstHostDeployStrategy(DeployStrategy):
+    """Deploy to the first host in the list and pause."""
+
+    def __init__(self, console_input):
+        self.console_input = console_input
+
+    def is_complete(self, hosts):
+        return True
+
+    @inlineCallbacks
+    def get_next_strategy(self, hosts):
+        print "Deploy to first host complete, what should I do now?"
+        selection = yield prompt_choice(self.console_input, (
+            "something's wrong, [a]bort the deploy!",
+            "that host isn't spewing errors, [c]ontinue to all canaries",
+        ))
+
+        if selection == "a":
+            raise AbortDeploy("user aborted deploy")
+        elif selection == "c":
+            returnValue(CanaryDeployStrategy(self.console_input))
+
+
+class CanaryDeployStrategy(DeployStrategy):
+    """Deploy to at least one host in each pool before pausing."""
+
+    def __init__(self, console_input):
+        self.console_input = console_input
+        self.enqueued_pools = set()
+
+    def is_complete(self, hosts):
+        all_pools = {host.pool for host in hosts.iterkeys()}
+        pools_deployed_to = {host.pool for host, status in hosts.iteritems()
+                             if status["status"] in ("complete", "deploying")}
+        untouched_pools = all_pools - pools_deployed_to
+        return not untouched_pools
+
+    @inlineCallbacks
+    def get_next_strategy(self, hosts):
+        pools_deployed_to = {host.pool for host, status in hosts.iteritems()
+                             if status["status"] == "complete"}
+        if len(pools_deployed_to) > 1:
+            print ("Canary deploy complete, please verify the canary "
+                   "hosts are not reporting errors in the logs.")
+            yield prompt_declaration(self.console_input, "The canaries are healthy")
+        else:
+            print ("Canary deploy complete, please verify the canary "
+                   "host is not reporting errors in the logs.")
+            yield prompt_declaration(self.console_input, "The canary is healthy")
+
+        print
+        print "Great!"
+
+        next_strategy = yield get_next_regular_strategy(self.console_input, hosts)
+        returnValue(next_strategy)
+
+
+def round_to_next_target(hosts, raw_target):
+    """Round up from a target percentage to the next achievable value.
+
+    When the number of hosts is low, there's a minimum jump in percentage
+    from host-to-host. This rounds up to the next value so that the user isn't
+    surprised by the deploy going further than expected from the prompts.
+
+    """
+    minimum_step_size = 1. / len(hosts) * 100
+    return int(math.ceil(raw_target / minimum_step_size) * minimum_step_size)
+
+
+@inlineCallbacks
+def get_next_regular_strategy(console_input, hosts):
+    options = [
+        "something's wrong, [a]bort the deploy!",
+    ]
+    strategies = {}
+
+    if len(hosts) <= 3:
+        options.append("roll out to the [n]ext host")
+        strategies["n"] = SingleHostDeployStrategy(console_input)
+    else:
+        percent_complete = calculate_percent_complete(hosts)
+
+        if percent_complete < 65:
+            target = round_to_next_target(hosts, percent_complete + 25)
+            options.append("i'm not worried about load, [j]ump forward to %d%% of hosts" % target)
+            strategies["j"] = PercentDeployStrategy(console_input, target)
+
+        if percent_complete < 85:
+            target = round_to_next_target(hosts, percent_complete + 10)
+            options.append("let's keep an eye on load, [s]tep forward to %d%% of hosts" % target)
+            strategies["s"] = PercentDeployStrategy(console_input, target)
+
+        if percent_complete >= 65:
+            options.append("all is good, [f]inish deploying to 100% of hosts")
+            strategies["f"] = FreeDeployStrategy()
+
+    print
+    print "What should I do now?"
+    selection = yield prompt_choice(console_input, options)
+
+    if selection == "a":
+        raise AbortDeploy("user aborted deploy")
+    returnValue(strategies[selection])
+
+
+class SingleHostDeployStrategy(DeployStrategy):
+    """Deploy to just one host (but not the first), useful for small batches."""
+
+    def __init__(self, console_input):
+        self.console_input = console_input
+
+    def is_complete(self, hosts):
+        return True
+
+    @inlineCallbacks
+    def get_next_strategy(self, hosts):
+        next_strategy = yield get_next_regular_strategy(self.console_input, hosts)
+        returnValue(next_strategy)
+
+
+class PercentDeployStrategy(DeployStrategy):
+    """Deploy to a percentage of the total number of hosts."""
+
+    def __init__(self, console_input, target_percent):
+        self.console_input = console_input
+        self.target_percent = target_percent
+
+    def is_complete(self, hosts):
+        completed = sum(1 for state in hosts.itervalues()
+                        if state["status"] in ("complete", "deploying"))
+        percent_done_or_in_flight = int((completed / len(hosts)) * 100)
+        return percent_done_or_in_flight >= self.target_percent
+
+    @inlineCallbacks
+    def get_next_strategy(self, hosts):
+        next_strategy = yield get_next_regular_strategy(self.console_input, hosts)
+        returnValue(next_strategy)
+
+
+class FreeDeployStrategy(DeployStrategy):
+    def is_complete(self, hosts):
+        return False
+
+    @inlineCallbacks
+    def get_next_strategy(self, hosts):
+        raise NotImplementedError
+
+
 class HeadfulFrontend(HeadlessFrontend):
 
-    def __init__(self, event_bus, hosts, verbose_logging, pause_after, config):
+    def __init__(self, event_bus, hosts, verbose_logging, config):
         HeadlessFrontend.__init__(self, event_bus, hosts, verbose_logging)
 
         self.console_input = StdioListener()
@@ -234,12 +444,15 @@ class HeadfulFrontend(HeadlessFrontend):
         event_bus.register({
             "deploy.precheck": self.on_precheck,
             "deploy.sleep": self.on_sleep,
-            "deploy.enqueue": self.on_enqueue,
         })
 
         self.config = config
-        self.pause_after = pause_after
-        self.enqueued_hosts = 0
+
+        pools = set(host.pool for host in hosts)
+        if len(pools) > 1:
+            self.deploy_strategy = FirstHostDeployStrategy(self.console_input)
+        else:
+            self.deploy_strategy = CanaryDeployStrategy(self.console_input)
 
     def on_sleep(self, host, count):
         print colorize("*** sleeping %d..." % count, Color.BOLD(Color.BLUE))
@@ -275,58 +488,17 @@ class HeadfulFrontend(HeadlessFrontend):
                     raise AbortDeploy("cancelled")
 
     @inlineCallbacks
-    def on_enqueue(self, deploys):
-        # the deployer has added a host to the queue to deploy to
-        self.enqueued_hosts += 1
+    def on_enqueue(self, host, deferred):
+        yield super(HeadfulFrontend, self).on_enqueue(host, deferred)
 
-        # we won't pause the action if we're near the end or have room for more
-        completed_hosts = self.count_completed_hosts()
-        if completed_hosts + self.pause_after >= self.count_hosts():
+        if not any(state["status"] == "pending" for state in self.hosts.itervalues()):
+            # there's no reason to pause if all hosts are already in flight
             return
 
-        if not self.pause_after or self.enqueued_hosts < self.pause_after:
-            return
+        if self.deploy_strategy.is_complete(self.hosts):
+            deferreds = [state["deferred"] for state in self.hosts.itervalues()
+                         if state["status"] == "deploying"]
+            yield DeferredList(deferreds, consumeErrors=True)
 
-        # wait for outstanding hosts to finish up
-        yield DeferredList(deploys, consumeErrors=True)
-
-        # prompt the user for what to do now
-        while True:
-            print colorize(
-                "*** waiting for input: e[x]it, [c]ontinue, [a]ll remaining, "
-                "[p]ercentage", Color.BOLD(Color.CYAN))
-
-            c = yield self.console_input.read_character()
-
-            if c == "a":
-                self.pause_after = 0
-                break
-            elif c == "x":
-                raise AbortDeploy("x pressed")
-            elif c == "c":
-                self.pause_after = 1
-                break
-            elif c == "p":
-                min_percent = self.percent_complete() + 1
-                prompt = "how far? (%d-100) " % min_percent
-                prompt_input = yield self.console_input.raw_input(prompt)
-
-                try:
-                    desired_percent = int(prompt_input)
-                except ValueError:
-                    continue
-
-                if not (min_percent <= desired_percent <= 100):
-                    print("must be an integer between %d and 100" % min_percent)  # noqa
-                    continue
-
-                completed_hosts = self.count_completed_hosts()
-                desired_host_index = int(
-                    (desired_percent / 100) * self.count_hosts())
-
-                # since pause_after=0 means "don't pause", we want to make sure
-                # that rounding never accidentally puts us at zero
-                self.pause_after = max(desired_host_index - completed_hosts, 1)
-                break
-
-        self.enqueued_hosts = 0
+            self.deploy_strategy = yield self.deploy_strategy.get_next_strategy(
+                self.hosts)

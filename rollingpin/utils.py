@@ -1,8 +1,6 @@
 import collections
 import contextlib
 import math
-import os
-import random
 import re
 
 from twisted.internet import reactor
