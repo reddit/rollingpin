@@ -17,7 +17,7 @@ class MockHostSource(HostSource):
         self.hosts = config["hostsource"]["hosts"].split()
 
     def get_hosts(self):
-        return succeed(Host(name, name, name, "")
+        return succeed(Host(name, name, name, name.split("-")[0])
                        for name in self.hosts)
 
     def should_be_alive(self, host):
