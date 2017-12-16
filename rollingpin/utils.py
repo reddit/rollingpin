@@ -36,25 +36,6 @@ def sleep(seconds):
 valid_push_word = re.compile("^[a-z:]{5,}$")
 
 
-def sorted_nicely(iterable):
-    """Sort strings with embedded numbers in them the way humans would expect.
-
-    http://nedbatchelder.com/blog/200712/human_sorting.html#comments
-
-    """
-
-    def tryint(maybe_int):
-        try:
-            return int(maybe_int)
-        except ValueError:
-            return maybe_int
-
-    def alphanum_key(key):
-        return [tryint(c) for c in re.split("([0-9]+)", key)]
-
-    return sorted(iterable, key=alphanum_key)
-
-
 @inlineCallbacks
 def parallel_map(iterable, fn, *args, **kwargs):
     deferreds = []
@@ -82,6 +63,9 @@ def interleaved(items, key):
     the same time due to an unlucky host ordering.
 
     """
+    if not items:
+        return []
+
     grouped = collections.defaultdict(list)
     for item in items:
         grouped[key(item)].append(item)

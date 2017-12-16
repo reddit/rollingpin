@@ -44,20 +44,6 @@ def _add_selection_arguments(config, parser):
         dest="host_refs",
     )
 
-    selection_group.add_argument(
-        "--startat",
-        help="skip to this position in the host list",
-        metavar="HOST",
-        dest="start_at",
-    )
-
-    selection_group.add_argument(
-        "--stopbefore",
-        help="end the deploy when this host is reached",
-        metavar="HOST",
-        dest="stop_before",
-    )
-
 
 def _add_iteration_arguments(config, parser):
     iteration_group = parser.add_argument_group("host iteration")
@@ -249,13 +235,6 @@ def construct_canonical_commandline(config, args):
 
     arg_list.append("-h")
     arg_list.extend(args.host_refs)
-
-    if args.start_at:
-        arg_list.append("--startat=%s" % args.start_at)
-
-    if args.stop_before:
-        arg_list.append("--stopbefore=%s" % args.stop_before)
-
     arg_list.append("--parallel=%d" % args.parallel)
 
     sleeptime_default = config["deploy"]["default-sleeptime"]

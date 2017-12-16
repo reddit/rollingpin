@@ -6,7 +6,6 @@ from rollingpin.hostlist import (
     parse_aliases,
     resolve_alias,
     resolve_hostlist,
-    restrict_hostlist,
     UnresolvableAliasError,
     UnresolvableHostRefError,
 )
@@ -91,37 +90,3 @@ class TestHostListResolution(unittest.TestCase):
             "bad_alias": "d",
         })
         self.assertEqual(hostlist, [a])
-
-
-class TestHostListRestriction(unittest.TestCase):
-
-    def setUp(self):
-        self.hostlist = map(MockHost, ["a", "b", "c", "d", "e", "f"])
-
-    def test_empty(self):
-        hostlist = restrict_hostlist([], None, None)
-        self.assertEqual(hostlist, [])
-
-    def test_invalid_startat(self):
-        with self.assertRaises(HostSelectionError):
-            restrict_hostlist([], "a", None)
-
-    def test_invalid_stopbefore(self):
-        with self.assertRaises(HostSelectionError):
-            restrict_hostlist([], None, "a")
-
-    def test_startat(self):
-        hostlist = restrict_hostlist(self.hostlist, "c", None)
-        self.assertEqual(hostlist, self.hostlist[2:])
-
-    def test_stopbefore(self):
-        hostlist = restrict_hostlist(self.hostlist, None, "c")
-        self.assertEqual(hostlist, self.hostlist[:2])
-
-    def test_startat_and_stopbefore(self):
-        hostlist = restrict_hostlist(self.hostlist, "c", "e")
-        self.assertEqual(hostlist, self.hostlist[2:-2])
-
-    def test_stopbefore_before_startat(self):
-        hostlist = restrict_hostlist(self.hostlist, "e", "c")
-        self.assertEqual(hostlist, [])

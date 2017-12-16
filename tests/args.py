@@ -55,24 +55,6 @@ class TestArgumentParsing(unittest.TestCase):
         args = parse_args(self.config, ["-h", "a", "--sleeptime", "1"])
         self.assertEqual(args.sleeptime, 1)
 
-    # --startat
-    def test_startat_empty(self):
-        args = parse_args(self.config, ["-h", "a"])
-        self.assertIsNone(args.start_at)
-
-    def test_startat_host(self):
-        args = parse_args(self.config, ["-h", "a", "--startat", "host"])
-        self.assertEqual(args.start_at, "host")
-
-    # --stopbefore
-    def test_stopbefore_empty(self):
-        args = parse_args(self.config, ["-h", "a"])
-        self.assertIsNone(args.stop_before)
-
-    def test_stopbefore_host(self):
-        args = parse_args(self.config, ["-h", "a", "--stopbefore", "host"])
-        self.assertEqual(args.stop_before, "host")
-
     # --list
     def test_list_default(self):
         args = parse_args(self.config, ["-h", "a"])
@@ -227,18 +209,6 @@ class TestArgumentReconstruction(unittest.TestCase):
         args = parse_args(self.config, ["-h", "host", "-h", "host2"])
         canonical = construct_canonical_commandline(self.config, args)
         self.assertEqual("-h host host2 --parallel=5 --timeout=60", canonical)
-
-    def test_startat(self):
-        args = parse_args(self.config, ["-h", "host", "--startat", "host"])
-        canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual(
-            "-h host --startat=host --parallel=5 --timeout=60", canonical)
-
-    def test_stopbefore(self):
-        args = parse_args(self.config, ["-h", "host", "--stopbefore", "host"])
-        canonical = construct_canonical_commandline(self.config, args)
-        self.assertEqual(
-            "-h host --stopbefore=host --parallel=5 --timeout=60", canonical)
 
     def test_parallel(self):
         args = parse_args(self.config, ["-h", "host", "--parallel", "1"])

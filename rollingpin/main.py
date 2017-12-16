@@ -28,7 +28,7 @@ from .hostlist import (
     HostlistError,
     parse_aliases,
     resolve_hostlist,
-    restrict_hostlist,
+    select_canaries,
 )
 from .hostsources import HostSourceError
 from .graphite import enable_graphite_notifications
@@ -135,23 +135,33 @@ def _parse_args(config, raw_args, initial_parser):
 def _select_hosts(config, args):
     # get the list of hosts from the host source
     try:
-        all_hosts_unsorted = yield config["hostsource"].get_hosts()
+        all_hosts = yield config["hostsource"].get_hosts()
     except HostSourceError as e:
         print_error("could not fetch host list: {}", e)
         sys.exit(1)
 
     try:
-        full_hostlist = resolve_hostlist(
-            args.host_refs, all_hosts_unsorted, config["aliases"])
-        selected_hosts = restrict_hostlist(
-            full_hostlist, args.start_at, args.stop_before)
+        hostlist = resolve_hostlist(args.host_refs, all_hosts, config["aliases"])
     except HostlistError as e:
         print_error("{}", e)
         sys.exit(1)
 
-    hosts = interleaved(selected_hosts, key=lambda h: h.pool)
+    canaries = select_canaries(hostlist)
+    for canary in canaries:
+        hostlist.remove(canary)
 
-    returnValue(hosts)
+    # sort the list for repeatability across multiple deploys.
+    sorted_hostlist = sorted(hostlist, key=lambda h: h.id, reverse=True)
+
+    # interleave hosts by pool to spread pools out as evenly as possible
+    rest_of_hosts = interleaved(sorted_hostlist, key=lambda h: h.pool)
+
+    # the interleave algorithm biases to the left, so a small pool will be very
+    # early in the list and nowhere near the end. since we touch one of each
+    # host type in the canary process, we flip around the interleaved list
+    # before concatenating to give the small pools more room before they are
+    # repeated in the hostlist.
+    returnValue(canaries + list(reversed(rest_of_hosts)))
 
 
 @inlineCallbacks

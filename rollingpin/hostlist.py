@@ -1,5 +1,5 @@
 import fnmatch
-import itertools
+import collections
 
 
 ALIAS_SECTION = "aliases"
@@ -73,23 +73,33 @@ def resolve_hostlist(host_refs, all_hosts, aliases):
     return resolved_hosts
 
 
-def restrict_hostlist(hosts, start_at, stop_before):
-    if start_at and not any(host.name == start_at for host in hosts):
-        raise HostSelectionError(
-            "--startat: %r not in host list" % start_at)
+def select_canaries(hosts):
+    """Pick representative canary hosts from the full host list.
 
-    if stop_before and not any(host.name == stop_before for host in hosts):
-        raise HostSelectionError(
-            "--stopbefore: %r not in host list" % stop_before)
+    The goals are:
 
-    if start_at or stop_before:
-        filtered = hosts
-        if stop_before:
-            filtered = itertools.takewhile(
-                lambda host: host.name != stop_before, filtered)
-        if start_at:
-            filtered = itertools.dropwhile(
-                lambda host: host.name != start_at, filtered)
-        return list(filtered)
-    else:
-        return hosts
+    * the canaries should represent all pools in the hostlist
+    * the first host should be from the most common pool
+        * if it's a bad deploy it affects the pool with the most capacity.
+        * hopefully the largest pool will have the most traffic to test on.
+    * the ordering should be stable for repeatability on revert
+
+    To achieve this, we take one host from each pool ordering the pools by
+    descending size and the hosts within a pool by instance ID.
+
+    """
+    by_pool = collections.defaultdict(list)
+    for host in hosts:
+        by_pool[host.pool].append(host)
+
+    by_pool_ordered_by_pool_size = sorted(
+        by_pool.iteritems(),
+        key=lambda (pool_name, hosts): len(hosts),
+        reverse=True,
+    )
+
+    canaries = []
+    for pool, hosts in by_pool_ordered_by_pool_size:
+        canary_for_pool = sorted(hosts, key=lambda h: h.id)[0]
+        canaries.append(canary_for_pool)
+    return canaries
