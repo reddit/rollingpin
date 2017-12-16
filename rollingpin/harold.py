@@ -131,5 +131,7 @@ class HaroldNotifier(object):
 
 def enable_harold_notifications(
         word, config,  event_bus, hosts, command_line, log_path):
+    if not (config["harold"]["base-url"] and config["harold"]["hmac-secret"]):
+        return
     harold = HaroldWhisperer(config)
     HaroldNotifier(harold, event_bus, word, hosts, command_line, log_path)
