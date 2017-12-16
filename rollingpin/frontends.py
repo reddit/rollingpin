@@ -478,14 +478,17 @@ class HeadfulFrontend(HeadlessFrontend):
 
             print "This may not be a good time to do a deploy:",
             print ", and ".join(colorize(r, Color.BOLD(Color.YELLOW)) for r in reasons) + ".",
-            print "Are you sure you want to proceed with the deploy? [y/n]"
+            print
 
-            while True:
-                char = yield self.console_input.read_character()
-                if char == "y":
-                    break
-                elif char == "n":
-                    raise AbortDeploy("cancelled")
+            choice = yield prompt_choice(self.console_input, (
+                "whoops! never mind, [a]bort",
+                "i have manager approval, [d]eploy anyway",
+            ))
+
+            if choice == "a":
+                raise AbortDeploy("aborted at precheck")
+            elif choice == "d":
+                return
 
     @inlineCallbacks
     def on_enqueue(self, host, deferred):
