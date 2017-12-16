@@ -44,6 +44,13 @@ class MockTransportConnection(TransportConnection):
         elif command == "wait-until-components-ready":
             log.debug("MOCK: /sbin/initctl emit wait-until-components-ready")
             yield sleep(random.random() * 1)
+        elif command == "components":
+            result["components"] = {
+                "example": {
+                    "fbcedda5b56618db18426f90a06f1f62984b95e8": 3,
+                    "7af8fe6294eab579c022b200388e886a348f05ac": 5,
+                },
+            }
         else:
             raise CommandFailed("unknown command %r" % command)
 
