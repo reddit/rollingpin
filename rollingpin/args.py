@@ -306,8 +306,8 @@ def construct_canonical_commandline(config, args):
 
 
 def build_action_summary(config, args):
-    expanded_command = os.path.basename(sys.argv[0]) + " " \
-            + construct_canonical_commandline(config, args)
+    expanded_command = (os.path.basename(sys.argv[0]) + " " +
+                        construct_canonical_commandline(config, args))
 
     summary_points = []
 
