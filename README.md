@@ -87,11 +87,35 @@ on the hosts matched by the `myhosts ` alias.
 
 Development
 -----
-For local dev, you can run all tests/lint in a local docker container by:
+
+A `Vagrantfile` is included which sets up a testing environment that uses a
+mock hostsource and transport so that you can simulate deploys to non-existent
+hosts.
+
+```
+# launch the environment
+host$ vagrant up
+host$ vagrant ssh
+
+# "deploy" to the full list of servers
+rollingpin$ rollout test
+
+# "deploy" to smaller subsets of servers
+rollingpin$ rollout test -h common
+rollingpin$ rollout test -h medium
+rollingpin$ rollout test -h rare
+rollingpin$ rollout test -h singular
+
+# run the test suite
+rollingpin$ cd rollingpin/
+rollingpin$ python setup.py test
+```
+
+You can also run the test and lint suites in a Docker container:
+
 ```bash
 docker build . -t rollingpin:test && docker run --rm rollingpin:test
 ```
-
 
 [1]: http://i.imgur.com/66Nr9Wo.jpg
 [2]: https://github.com/spladug/harold
