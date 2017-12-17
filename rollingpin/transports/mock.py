@@ -16,7 +16,7 @@ class MockTransport(Transport):
 
     @inlineCallbacks
     def connect_to(self, host):
-        yield sleep(random.random() * 2)
+        yield sleep(random.random())
 
         connection = MockTransportConnection()
         returnValue(connection)
