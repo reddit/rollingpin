@@ -181,7 +181,7 @@ def _main(reactor, *raw_args):
     args = _parse_args(config, raw_args, profile)
 
     if not args.list_hosts:
-        print build_action_summary(config, args)
+        print build_action_summary(config, args),
 
     if args.test:
         sys.exit(0)

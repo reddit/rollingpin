@@ -489,6 +489,16 @@ class HeadfulFrontend(HeadlessFrontend):
                 raise AbortDeploy("aborted at precheck")
             elif choice == "d":
                 return
+        else:
+            choice = yield prompt_choice(self.console_input, (
+                "those instructions don't look right, [a]bort!",
+                "looks good, [s]tart the deploy!",
+            ))
+
+            if choice == "a":
+                raise AbortDeploy("aborted at deploy description")
+            elif choice == "s":
+                return
 
     @inlineCallbacks
     def on_enqueue(self, host, deferred):
