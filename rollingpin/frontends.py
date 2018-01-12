@@ -150,7 +150,10 @@ class HeadlessFrontend(object):
             self.hosts[host]["status"] = "complete"
             self.hosts[host]["result"] = "success"
             self.hosts[host]["output"] = results
-            del self.hosts[host]["deferred"]
+            try:
+                del self.hosts[host]["deferred"]
+            except KeyError:
+                pass
             self._print_percent_complete()
 
     def on_host_abort(self, host, error, should_be_alive):
@@ -158,7 +161,10 @@ class HeadlessFrontend(object):
             self.hosts[host]["status"] = "complete"
             self.hosts[host]["result"] = "aborted"
             self.hosts[host]["should_be_alive"] = should_be_alive
-            del self.hosts[host]["deferred"]
+            try:
+                del self.hosts[host]["deferred"]
+            except KeyError:
+                pass
             self._print_percent_complete()
 
     def _print_percent_complete(self):
