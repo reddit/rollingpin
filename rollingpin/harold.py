@@ -68,9 +68,11 @@ class HaroldWhisperer(object):
 
 class HaroldNotifier(object):
 
-    def __init__(self, harold, event_bus, word, hosts, command_line, log_path):
+    def __init__(self, harold, event_bus, salon, word,
+                 hosts, command_line, log_path):
         self.log = logging.getLogger(__name__)
         self.harold = harold
+        self.salon = salon
         self.word = word
         self.command_line = command_line
         self.log_path = log_path
@@ -90,6 +92,7 @@ class HaroldNotifier(object):
     def on_deploy_begin(self):
         with swallow_exceptions("harold", self.log):
             yield self.harold.make_request("deploy/begin", {
+                "salon": self.salon,
                 "id": self.word,
                 "who": getpass.getuser(),
                 "args": self.command_line,
@@ -101,6 +104,7 @@ class HaroldNotifier(object):
     def on_deploy_abort(self, reason):
         with swallow_exceptions("harold", self.log):
             yield self.harold.make_request("deploy/abort", {
+                "salon": self.salon,
                 "id": self.word,
                 "reason": str(reason),
             })
@@ -109,6 +113,7 @@ class HaroldNotifier(object):
     def on_deploy_end(self):
         with swallow_exceptions("harold", self.log):
             yield self.harold.make_request("deploy/end", {
+                "salon": self.salon,
                 "id": self.word,
                 "failed_hosts": ",".join(host.name for host in self.failed_hosts),
             })
@@ -119,6 +124,7 @@ class HaroldNotifier(object):
 
         with swallow_exceptions("harold", self.log):
             yield self.harold.make_request("deploy/progress", {
+                "salon": self.salon,
                 "id": self.word,
                 "host": host,
                 "index": self.completed_hosts,
@@ -131,7 +137,11 @@ class HaroldNotifier(object):
 
 def enable_harold_notifications(
         word, config,  event_bus, hosts, command_line, log_path):
-    if not (config["harold"]["base-url"] and config["harold"]["hmac-secret"]):
+    if not (config["harold"]["base-url"] and
+            config["harold"]["hmac-secret"] and
+            config["harold"]["salon"]):
         return
+
     harold = HaroldWhisperer(config)
-    HaroldNotifier(harold, event_bus, word, hosts, command_line, log_path)
+    HaroldNotifier(harold, event_bus, config["harold"]["salon"],
+                   word, hosts, command_line, log_path)

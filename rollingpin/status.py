@@ -4,6 +4,7 @@ import json
 import logging
 import posixpath
 import time
+import urllib
 import urlparse
 
 from twisted.internet import reactor
@@ -25,7 +26,7 @@ SAFE_DEFAULT = {
 
 
 @inlineCallbacks
-def _do_status_http_request(harold_base_url, harold_secret):
+def _do_status_http_request(harold_base_url, harold_secret, salon):
     base_url = urlparse.urlparse(harold_base_url)
     path = posixpath.join(base_url.path, "harold/deploy/status")
     url = urlparse.urlunparse((
@@ -33,7 +34,7 @@ def _do_status_http_request(harold_base_url, harold_secret):
         base_url.netloc,
         path,
         None,
-        None,
+        urllib.urlencode({"salon": salon}),
         None
     ))
 
@@ -57,10 +58,11 @@ def _do_status_http_request(harold_base_url, harold_secret):
 def fetch_deploy_status(config):
     harold_base_url = config["harold"]["base-url"]
     harold_secret = config["harold"]["hmac-secret"]
-    if not harold_base_url or not harold_secret:
+    salon = config["harold"]["salon"]
+    if not harold_base_url or not harold_secret or not salon:
         returnValue(SAFE_DEFAULT)
 
-    fetch_req = _do_status_http_request(harold_base_url, harold_secret)
+    fetch_req = _do_status_http_request(harold_base_url, harold_secret, salon)
 
     # give the request a few seconds and bail out if it takes too long
     timeout = reactor.callLater(TIMEOUT_SECONDS, fetch_req.cancel)

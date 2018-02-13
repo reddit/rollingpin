@@ -54,6 +54,7 @@ CONFIG_SPEC = {
     "harold": OptionalSection({
         "base-url": Option(str, default=None),
         "hmac-secret": Option(str, default=None),
+        "salon": Option(str, default=None),
     }),
 
     "graphite": OptionalSection({
