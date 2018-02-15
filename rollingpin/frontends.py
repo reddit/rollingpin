@@ -274,13 +274,20 @@ def prompt_choice(console_input, options):
 
 @inlineCallbacks
 def prompt_declaration(console_input, required_declaration):
+    obfuscated = u"\u200B".join(required_declaration)
+
     print
-    print 'To continue, type "%s" at the prompt or press Ctrl+C to abort.' % required_declaration
+    print u'To continue, type "%s" at the prompt or press Ctrl+C to abort.' % obfuscated
     print
     while True:
         entered_declaration = yield console_input.raw_input("> ")
+        entered_declaration = entered_declaration.decode("utf8")
+
         if entered_declaration.lower() == required_declaration.lower():
             returnValue(None)
+        elif u"\u200B" in entered_declaration:
+            print "Copy-pasting is cheating!"
+            continue
 
 
 class DeployStrategy(object):
