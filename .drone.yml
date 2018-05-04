@@ -6,10 +6,16 @@ pipeline:
       - scripts/ci/test.sh
 
   notify:
-    image: plugins/slack
+    image: 258875347723.dkr.ecr.us-east-1.amazonaws.com/drone-plugin-slack
     channel: infra-salon
-    secrets: [ SLACK_WEBHOOK ]
+    secrets: [ slack_webhook ]
     when:
       event: [ push ]
       branch: master
       status: [ success, failure ]
+
+secrets:
+  slack_webhook:
+    driver: vault
+    driver_opts:
+      path: secret/drone/common/slack_webhook
