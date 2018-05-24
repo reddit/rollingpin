@@ -47,6 +47,7 @@ class ElasticSearchNotifier(object):
         self.profile = profile
         self.endpoint = "https://%s/%s/%s" % (base_url, index, index_type)
         self.components = components
+        self.deploy_annotation_id = None
 
     def index_doc(self, doc):
         """ Index a document in Elasticsearch
