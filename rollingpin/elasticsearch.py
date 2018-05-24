@@ -148,7 +148,8 @@ class ElasticSearchNotifier(object):
         if response.code != 201:
             self.logger.error('Could not store deploy metadata.  '
                               'Got response %s', body)
-        self.deploy_annotation_id = json.loads(body).get('_id', '')
+        else:
+            self.deploy_annotation_id = json.loads(body).get('_id', '')
 
     @inlineCallbacks
     def on_deploy_abort(self, reason):
