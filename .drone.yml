@@ -14,6 +14,16 @@ pipeline:
       branch: master
       status: [ success, failure ]
 
+  testspace:
+    image: s2technologies/testspace-client
+    pull: true
+    commands:
+      - testspace config url 4e2932be8e9326d29441f932f0bdc52cd9a66ac5@reddit.testspace.com
+    #  - testspace TEST*.xml
+    #secrets: [ testspace_token ]
+    when:
+      status: [ failure, success ]
+
 secrets:
   slack_webhook:
     driver: vault
