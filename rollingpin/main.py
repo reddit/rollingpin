@@ -215,7 +215,7 @@ def _main(reactor, *raw_args):
     # execute
     if args.list_hosts:
         for host in hosts:
-            print host.name
+            print host.name, host.address
     else:
         deployer = Deployer(
             config,
