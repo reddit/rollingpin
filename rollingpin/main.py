@@ -35,6 +35,7 @@ from .graphite import enable_graphite_notifications
 from .log import log_to_file
 from .providers import get_provider, UnknownProviderError
 from .utils import interleaved, b36encode
+from .wavefront import enable_wavefront_notifications
 
 
 PROFILE_DIRECTORY = "/etc/rollingpin.d/"
@@ -65,6 +66,11 @@ CONFIG_SPEC = {
         "endpoint": Option(str, default=None),
         "index": Option(str, default=None),
         "type": Option(str, default=None),
+    }),
+
+    "wavefront": OptionalSection({
+        "endpoint": Option(str, default=None),
+        "api_key": Option(str, default=None),
     }),
 
     "hostsource": {
@@ -205,6 +211,10 @@ def _main(reactor, *raw_args):
 
     if config["elasticsearch"]["endpoint"]:
         enable_elastic_search_notifications(
+            config, event_bus, args.components, hosts, args.original, word, profile)
+
+    if config["wavefront"]["endpoint"] and config["wavefront"]["api_key"]:
+        enable_wavefront_notifications(
             config, event_bus, args.components, hosts, args.original, word, profile)
 
     if not args.dangerously_fast and os.isatty(sys.stdout.fileno()):
