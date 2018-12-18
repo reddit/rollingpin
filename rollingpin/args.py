@@ -2,6 +2,8 @@ import argparse
 import os
 import sys
 
+import commands
+
 
 class ExtendList(argparse.Action):
     def __call__(self, parser, namespace, values, option_string):
@@ -17,13 +19,6 @@ class ExtendList(argparse.Action):
                 list_to_extend.remove(default)
         list_to_extend.extend(values)
         setattr(namespace, self.dest, list_to_extend)
-
-
-class RestartCommand(ExtendList):
-
-    def __call__(self, parser, namespace, values, option_string):
-        ExtendList.__call__(
-            self, parser, namespace, [["restart", values]], option_string)
 
 
 def _add_selection_arguments(config, parser):
@@ -192,6 +187,25 @@ def _add_deploy_arguments(config, parser):
     )
 
 
+def _parse_command_args(command_args):
+    rv = []
+    for (command, arg) in command_args:
+        if command == "synchronize":
+            rv.append(commands.SynchronizeCommand([arg]))
+        elif command == "deploy":
+            rv.append(commands.DeployCommand([arg]))
+        elif command == "build":
+            rv.append(commands.BuildCommand([arg]))
+        elif command == "restart":
+            rv.append(commands.RestartCommand([arg]))
+        elif command == "wait-until-components-ready":
+            rv.append(commands.WaitUntilComponentsReadyCommand([arg]))
+        else:
+            raise NotImplementedError
+
+    return rv
+
+
 def parse_args(config, raw_args=None, profile=None):
     prog = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(
@@ -220,6 +234,8 @@ def parse_args(config, raw_args=None, profile=None):
 
     for target in args.restart:
         args.commands.append(["restart", target])
+
+    args.commands = _parse_command_args(args.commands)
 
     if args.components == ["none"]:
         args.components = []
@@ -258,11 +274,11 @@ def construct_canonical_commandline(config, args):
         arg_list.extend(args.components)
 
     for command in args.commands:
-        if command[0] == "restart":
-            arg_list.extend(("-r", command[1]))
+        if isinstance(command, commands.RestartCommand):
+            arg_list.extend(("-r", command.args[0]))
         else:
             arg_list.append("-c")
-            arg_list.extend(command)
+            arg_list.extend(command.name)
 
     return " ".join(arg_list)
 
@@ -277,11 +293,11 @@ def build_action_summary(config, args):
         summary_points.append("Deploy the `{}` component.".format(component))
 
     for command in args.commands:
-        if command[0] == "restart":
+        if isinstance(command, commands.RestartCommand):
             summary_points.append(
-                "Restart `{}` applications.".format(command[1]))
+                "Restart `{}` applications.".format(command.args[0]))
         else:
-            summary_points.append("Run the `{}` command.".format(" ".join(command)))
+            summary_points.append("Run the `{}` command.".format(" ".join(command.name)))
 
     summary_details = []
 
