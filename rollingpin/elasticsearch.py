@@ -5,33 +5,10 @@ import logging
 import time
 
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, succeed
+from twisted.internet.defer import inlineCallbacks
 from twisted.web.client import Agent, readBody
 from twisted.web.http_headers import Headers
-from twisted.web.iweb import IBodyProducer
-from zope.interface import implements
-from .utils import swallow_exceptions
-
-
-class JSONBodyProducer(object):
-    implements(IBodyProducer)
-
-    def __init__(self, data):
-        self.length = len(data)
-        self.body = data
-
-    def startProducing(self, consumer):
-        consumer.write(self.body)
-        return succeed(None)
-
-    def pauseProducing(self):
-        pass
-
-    def stopProducing(self):
-        pass
-
-    def getBody(self):
-        return self.body
+from .utils import JSONBodyProducer, swallow_exceptions
 
 
 class ElasticSearchNotifier(object):

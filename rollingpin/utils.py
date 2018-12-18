@@ -10,7 +10,10 @@ from twisted.internet.defer import (
     gatherResults,
     inlineCallbacks,
     returnValue,
+    succeed,
 )
+from twisted.web.iweb import IBodyProducer
+from zope.interface import implements
 
 
 MAX_PARALLELISM = 50
@@ -99,3 +102,24 @@ def b36encode(number, alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
         base36 = alphabet[i] + base36
 
     return sign + base36
+
+
+class JSONBodyProducer(object):
+    implements(IBodyProducer)
+
+    def __init__(self, data):
+        self.length = len(data)
+        self.body = data
+
+    def startProducing(self, consumer):
+        consumer.write(self.body)
+        return succeed(None)
+
+    def pauseProducing(self):
+        pass
+
+    def stopProducing(self):
+        pass
+
+    def getBody(self):
+        return self.body
