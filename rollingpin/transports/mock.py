@@ -26,35 +26,63 @@ class MockTransportConnection(TransportConnection):
     @inlineCallbacks
     def execute(self, log, command, timeout=0):
         command, args = command[0], command[1:]
-        result = {}
 
         if command == "synchronize":
-            log.debug("MOCK: git fetch")
+            f = self._synchronize
         elif command == "build":
-            log.debug("MOCK: build stuff")
-            for arg in args:
-                result[arg] = "build-token"
+            f = self._build
         elif command == "deploy":
-            log.debug("MOCK: git fetch origin")
-            if random.random() < .2:
-                raise CommandFailed("remote command exited with status 127")
-            log.debug("MOCK: git checkout origin/master")
+            f = self._deploy
         elif command == "restart":
-            log.debug("MOCK: /sbin/initctl emit restart")
+            f = self._restart
         elif command == "wait-until-components-ready":
-            log.debug("MOCK: /sbin/initctl emit wait-until-components-ready")
-            yield sleep(random.random() * 1)
+            f = self._wait
         elif command == "components":
-            result["components"] = {
+            f = self._components
+        else:
+            raise CommandFailed("unknown command %r" % command)
+
+        result = yield f(log, command, args)
+        returnValue(result)
+
+    def _synchronize(self, log, command, args):
+        log.debug("MOCK: git fetch")
+        return succeed({})
+
+    def _build(self, log, command, args):
+        result = dict()
+        log.debug("MOCK: build stuff")
+        for arg in args:
+            result[arg] = "build-token"
+        return succeed(result)
+
+    def _deploy(self, log, command, args):
+        log.debug("MOCK: git fetch origin")
+        if random.random() < .2:
+            raise CommandFailed("remote command exited with status 127")
+        log.debug("MOCK: git checkout origin/master")
+        return succeed({})
+
+    def _restart(self, log, command, args):
+        log.debug("MOCK: /sbin/initctl emit restart")
+        return succeed({})
+
+    @inlineCallbacks
+    def _wait(self, log, command, args):
+        log.debug("MOCK: /sbin/initctl emit wait-until-components-ready")
+        yield sleep(random.random() * 1)
+        returnValue({})
+
+    def _components(self, log, command, args):
+        result = {
+            "components": {
                 "example": {
                     "fbcedda5b56618db18426f90a06f1f62984b95e8": 3,
                     "7af8fe6294eab579c022b200388e886a348f05ac": 5,
                 },
             }
-        else:
-            raise CommandFailed("unknown command %r" % command)
-
-        returnValue(result)
+        }
+        return succeed(result)
 
     def disconnect(self):
         return succeed(None)
