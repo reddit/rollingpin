@@ -18,7 +18,11 @@ class MockTransport(Transport):
     def connect_to(self, host):
         yield sleep(random.random())
 
-        connection = MockTransportConnection()
+        if host.startswith("noop"):
+            connection = NoopDeployMockTransportConnection()
+        else:
+            connection = MockTransportConnection()
+
         returnValue(connection)
 
 
@@ -47,7 +51,12 @@ class MockTransportConnection(TransportConnection):
 
     def _synchronize(self, log, command, args):
         log.debug("MOCK: git fetch")
-        return succeed({})
+        return succeed({
+            "test-component": {
+                "token": "build-token",
+                "buildhost": "build-01"
+            }
+        })
 
     def _build(self, log, command, args):
         result = dict()
@@ -57,11 +66,13 @@ class MockTransportConnection(TransportConnection):
         return succeed(result)
 
     def _deploy(self, log, command, args):
-        log.debug("MOCK: git fetch origin")
-        if random.random() < .2:
-            raise CommandFailed("remote command exited with status 127")
-        log.debug("MOCK: git checkout origin/master")
-        return succeed({})
+        for arg in args:
+            (component, build_token) = arg.split("@")
+            log.debug("MOCK: [{}] git fetch origin".format(component))
+            if random.random() < .2:
+                raise CommandFailed("remote command exited with status 127")
+            log.debug("MOCK: [{}] git checkout {}".format(component, build_token))
+            return succeed({})
 
     def _restart(self, log, command, args):
         log.debug("MOCK: /sbin/initctl emit restart")
@@ -86,3 +97,13 @@ class MockTransportConnection(TransportConnection):
 
     def disconnect(self):
         return succeed(None)
+
+
+class NoopDeployMockTransportConnection(MockTransportConnection):
+    def _deploy(self, log, command, args):
+        log.debug("MOCK: no local changes detected")
+        result = dict()
+        for arg in args:
+            result[arg] = False
+
+        return succeed(result)

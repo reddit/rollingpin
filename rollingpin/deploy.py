@@ -11,7 +11,14 @@ from twisted.internet.defer import (
     returnValue,
 )
 
-from .commands import BuildCommand, DeployCommand, RestartCommand, SynchronizeCommand, WaitUntilComponentsReadyCommand
+from .commands import (
+    Command,
+    BuildCommand,
+    DeployCommand,
+    RestartCommand,
+    SynchronizeCommand,
+    WaitUntilComponentsReadyCommand
+)
 from .hostsources import Host
 from .transports import TransportError, ExecutionTimeout
 from .utils import sleep
@@ -92,10 +99,16 @@ class Deployer(object):
             for command in commands:
                 log.info(" ".join(command.cmdline()))
                 yield self.event_bus.trigger(
-                    "host.command", host=host, command=command.name)
+                    "host.command", host=host, command=command.name())
                 result = yield connection.execute(log, command.cmdline(), timeout)
 
                 results.append(DeployResult(command.name(), result))
+
+                control = command.check_result(result)
+                if control == Command.SKIP_REMAINING:
+                    log.info("{} reported no changes, skipping remaining steps.".format(command.name()))
+                    break
+
             yield connection.disconnect()
         except TransportError as e:
             should_be_alive = yield self.host_source.should_be_alive(host)

@@ -189,19 +189,21 @@ def _add_deploy_arguments(config, parser):
 
 def _parse_command_args(command_args):
     rv = []
-    for (command, arg) in command_args:
-        if command == "synchronize":
-            rv.append(commands.SynchronizeCommand([arg]))
-        elif command == "deploy":
-            rv.append(commands.DeployCommand([arg]))
-        elif command == "build":
-            rv.append(commands.BuildCommand([arg]))
-        elif command == "restart":
-            rv.append(commands.RestartCommand([arg]))
-        elif command == "wait-until-components-ready":
-            rv.append(commands.WaitUntilComponentsReadyCommand([arg]))
+    for command in command_args:
+        (cmd_name, args) = (command[0], command[1:])
+
+        if cmd_name == "synchronize":
+            rv.append(commands.SynchronizeCommand(args))
+        elif cmd_name == "deploy":
+            rv.append(commands.DeployCommand(args))
+        elif cmd_name == "build":
+            rv.append(commands.BuildCommand(args))
+        elif cmd_name == "restart":
+            rv.append(commands.RestartCommand(args))
+        elif cmd_name == "wait-until-components-ready":
+            rv.append(commands.WaitUntilComponentsReadyCommand(args))
         else:
-            raise NotImplementedError
+            rv.append(commands.GenericCommand(cmd_name, args))
 
     return rv
 
@@ -278,7 +280,7 @@ def construct_canonical_commandline(config, args):
             arg_list.extend(("-r", command.args[0]))
         else:
             arg_list.append("-c")
-            arg_list.extend(command.name)
+            arg_list.extend(command.cmdline())
 
     return " ".join(arg_list)
 
