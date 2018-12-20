@@ -41,8 +41,11 @@ class DeployCommand(Command):
         return "deploy"
 
     def check_result(self, result):
-        changed = any([result[v] is not False for v in result])
+        # For backwards compatibility
+        if not result:
+            return Command.CONTINUE
 
+        changed = any([result[v] is not False for v in result])
         if not changed:
             return Command.SKIP_REMAINING
         else:
