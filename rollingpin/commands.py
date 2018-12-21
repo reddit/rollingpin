@@ -30,6 +30,12 @@ class Command(object):
     def check_result(self, result):
         return Command.CONTINUE
 
+    def __str__(self):
+        return "Command(name={}, args={})".format(self.name(), self._args)
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class SynchronizeCommand(Command):
     def name(self):

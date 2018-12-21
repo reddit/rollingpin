@@ -20,7 +20,7 @@ from .commands import (
     WaitUntilComponentsReadyCommand
 )
 from .hostsources import Host
-from .transports import TransportError, ExecutionTimeout
+from .transports import TransportError
 from .utils import sleep
 
 
