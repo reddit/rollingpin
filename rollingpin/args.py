@@ -235,7 +235,7 @@ def parse_args(config, raw_args=None, profile=None):
         args.restart = default_restart
 
     for target in args.restart:
-        args.commands.append(["restart", target])
+        args.commands.append(commands.RestartCommand([target]))
 
     args.commands = _parse_command_args(args.commands)
 
@@ -299,7 +299,7 @@ def build_action_summary(config, args):
             summary_points.append(
                 "Restart `{}` applications.".format(command.args[0]))
         else:
-            summary_points.append("Run the `{}` command.".format(" ".join(command.name)))
+            summary_points.append("Run the `{}` command.".format(" ".join(command.name())))
 
     summary_details = []
 
