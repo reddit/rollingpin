@@ -2,7 +2,16 @@ import argparse
 import os
 import sys
 
-import commands
+import .commands
+
+
+COMMANDS_BY_NAME = {
+    "synchronize": commands.SynchronizeCommand,
+    "deploy": commands.DeployCommand,
+    "build": commands.BuildCommand,
+    "restart": commands.RestartCommand,
+    "wait-until-components-ready": commands.WaitUntilComponentsReadyCommand,
+}
 
 
 class ExtendList(argparse.Action):
@@ -192,18 +201,13 @@ def _parse_command_args(command_args):
     for command in command_args:
         (cmd_name, args) = (command[0], command[1:])
 
-        if cmd_name == "synchronize":
-            rv.append(commands.SynchronizeCommand(args))
-        elif cmd_name == "deploy":
-            rv.append(commands.DeployCommand(args))
-        elif cmd_name == "build":
-            rv.append(commands.BuildCommand(args))
-        elif cmd_name == "restart":
-            rv.append(commands.RestartCommand(args))
-        elif cmd_name == "wait-until-components-ready":
-            rv.append(commands.WaitUntilComponentsReadyCommand(args))
+        if cmd_name in COMMANDS_BY_NAME:
+            cmd_class = COMMANDS_BY_NAME[cmd_name]
+            cmd = cmd_class(args)
         else:
-            rv.append(commands.GenericCommand(cmd_name, args))
+            cmd = commands.GenericCommand(cmd_name, args)
+
+        rv.append(cmd)
 
     return rv
 

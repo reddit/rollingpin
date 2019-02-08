@@ -17,7 +17,7 @@ from .commands import (
     DeployCommand,
     RestartCommand,
     SynchronizeCommand,
-    WaitUntilComponentsReadyCommand
+    WaitUntilComponentsReadyCommand,
 )
 from .hostsources import Host
 from .transports import TransportError
