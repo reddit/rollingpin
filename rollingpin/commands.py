@@ -13,13 +13,13 @@ class Command(object):
         self._args.append(arg)
 
     def cmdline(self):
-        return [self.name()] + self._args
+        return [self.name] + self._args
 
     def check_result(self, result):
         return Command.CONTINUE
 
     def __repr__(self):
-        return "Command(name={}, args={})".format(self.name(), self._args)
+        return "Command(name={}, args={})".format(self.name, self._args)
 
 
 class SynchronizeCommand(Command):
@@ -27,6 +27,10 @@ class SynchronizeCommand(Command):
 
 
 class DeployCommand(Command):
+    # Flag constants for deploy return value
+    REPO_UNCHANGED = "repo_unchanged"
+    REPO_CHANGED = "repo_changed"
+
     name = "deploy"
 
     def check_result(self, result):
@@ -34,7 +38,7 @@ class DeployCommand(Command):
         if not result:
             return Command.CONTINUE
 
-        changed = any(result[v] is not False for v in result)
+        changed = any(result[v] is DeployCommand.REPO_CHANGED for v in result)
         if not changed:
             return Command.SKIP_REMAINING
         else:

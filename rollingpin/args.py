@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 
-import .commands
+import rollingpin.commands as commands
 
 
 COMMANDS_BY_NAME = {
@@ -199,7 +199,7 @@ def _add_deploy_arguments(config, parser):
 def _parse_command_args(command_args):
     rv = []
     for command in command_args:
-        (cmd_name, args) = (command[0], command[1:])
+        (cmd_name, args) = command[0], command[1:]
 
         if cmd_name in COMMANDS_BY_NAME:
             cmd_class = COMMANDS_BY_NAME[cmd_name]
@@ -238,10 +238,10 @@ def parse_args(config, raw_args=None, profile=None):
 
         args.restart = default_restart
 
+    args.commands = _parse_command_args(args.commands)
+
     for target in args.restart:
         args.commands.append(commands.RestartCommand([target]))
-
-    args.commands = _parse_command_args(args.commands)
 
     if args.components == ["none"]:
         args.components = []

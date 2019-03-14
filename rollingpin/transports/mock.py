@@ -104,6 +104,6 @@ class NoopDeployMockTransportConnection(MockTransportConnection):
         log.debug("MOCK: no local changes detected")
         result = dict()
         for arg in args:
-            result[arg] = False
+            result[arg] = "repo_unchanged"
 
         return succeed(result)
