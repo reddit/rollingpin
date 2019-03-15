@@ -99,14 +99,14 @@ class Deployer(object):
             for command in commands:
                 log.info(" ".join(command.cmdline()))
                 yield self.event_bus.trigger(
-                    "host.command", host=host, command=command.name())
+                    "host.command", host=host, command=command.name)
                 result = yield connection.execute(log, command.cmdline(), timeout)
 
-                results.append(DeployResult(command.name(), result))
+                results.append(DeployResult(command.name, result))
 
                 control = command.check_result(result)
                 if control == Command.SKIP_REMAINING:
-                    log.info("{} reported no changes, skipping remaining steps.".format(command.name()))
+                    log.info("{} reported no changes, skipping remaining steps.".format(command.name))
                     break
 
             yield connection.disconnect()

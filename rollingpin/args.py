@@ -303,7 +303,7 @@ def build_action_summary(config, args):
             summary_points.append(
                 "Restart `{}` applications.".format(command.args[0]))
         else:
-            summary_points.append("Run the `{}` command.".format(" ".join(command.name())))
+            summary_points.append("Run the `{}` command.".format(" ".join(command.name)))
 
     summary_details = []
 
