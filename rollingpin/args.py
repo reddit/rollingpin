@@ -241,7 +241,7 @@ def parse_args(config, raw_args=None, profile=None):
     args.commands = _parse_command_args(args.commands)
 
     for target in args.restart:
-        args.commands.append(commands.RestartCommand([target]))
+        args.commands.append(commands.RestartCommand(args=[target], explicit=True))
 
     if args.components == ["none"]:
         args.components = []
@@ -303,7 +303,7 @@ def build_action_summary(config, args):
             summary_points.append(
                 "Restart `{}` applications.".format(command.args[0]))
         else:
-            summary_points.append("Run the `{}` command.".format(" ".join(command.name)))
+            summary_points.append("Run the `{}` command.".format(" ".join(command.cmdline())))
 
     summary_details = []
 

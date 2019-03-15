@@ -96,7 +96,9 @@ class Deployer(object):
         try:
             log.info("connecting")
             connection = yield self.transport.connect_to(host.address)
-            for command in commands:
+            command_queue = commands[::-1]
+            while command_queue:
+                command = command_queue.pop()
                 log.info(" ".join(command.cmdline()))
                 yield self.event_bus.trigger(
                     "host.command", host=host, command=command.name)
@@ -106,8 +108,8 @@ class Deployer(object):
 
                 control = command.check_result(result)
                 if control == Command.SKIP_REMAINING:
-                    log.info("{} reported no changes, skipping remaining steps.".format(command.name))
-                    break
+                    log.info("{} reported no changes, skipping remaining not explicitly defined steps.".format(command.name))
+                    command_queue = [cmd for cmd in command_queue if cmd.explicit]
 
             yield connection.disconnect()
         except TransportError as e:

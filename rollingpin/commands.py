@@ -2,7 +2,8 @@ class Command(object):
     CONTINUE = 1
     SKIP_REMAINING = 2
 
-    def __init__(self, args=None):
+    def __init__(self, args=None, explicit=False):
+        self.explicit = explicit
         self._args = args or []
 
     @property
@@ -58,6 +59,8 @@ class WaitUntilComponentsReadyCommand(Command):
 
 
 class GenericCommand(Command):
+
     def __init__(self, name, args=None):
         self.name = name
-        super(GenericCommand, self).__init__(args)
+        # Generic commands can only be added explicitly from the commandline.
+        super(GenericCommand, self).__init__(args=args, explicit=True)
