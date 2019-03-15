@@ -231,17 +231,18 @@ def parse_args(config, raw_args=None, profile=None):
 
     args = parser.parse_args(args=raw_args)
 
+    args.commands = _parse_command_args(args.commands)
+
     if not args.restart:
         default_restart = config["deploy"].get("default-restart", [])
         if not isinstance(default_restart, list):
             default_restart = [default_restart]
 
-        args.restart = default_restart
-
-    args.commands = _parse_command_args(args.commands)
-
-    for target in args.restart:
-        args.commands.append(commands.RestartCommand(args=[target], explicit=True))
+        for target in default_restart:
+            args.commands.append(commands.RestartCommand(args=[target], explicit=False))
+    else:
+        for target in args.restart:
+            args.commands.append(commands.RestartCommand(args=[target], explicit=True))
 
     if args.components == ["none"]:
         args.components = []
