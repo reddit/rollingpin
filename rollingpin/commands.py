@@ -39,7 +39,7 @@ class DeployCommand(Command):
         if not result:
             return Command.CONTINUE
 
-        changed = any(result[v] is DeployCommand.REPO_CHANGED for v in result)
+        changed = any(result[v] == DeployCommand.REPO_CHANGED for v in result)
         if not changed:
             return Command.SKIP_REMAINING
         else:
