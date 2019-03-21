@@ -9,6 +9,7 @@ COMMANDS_BY_NAME = {
     "synchronize": commands.SynchronizeCommand,
     "deploy": commands.DeployCommand,
     "build": commands.BuildCommand,
+    "build-complete": commands.BuildCompleteCommand,
     "restart": commands.RestartCommand,
     "wait-until-components-ready": commands.WaitUntilComponentsReadyCommand,
 }
