@@ -96,6 +96,7 @@ class Deployer(object):
         try:
             log.info("connecting")
             connection = yield self.transport.connect_to(host.address)
+            command_queue = commands.copy()
             while command_queue:
                 command = command_queue.pop(0)
                 log.info(" ".join(command.cmdline()))
