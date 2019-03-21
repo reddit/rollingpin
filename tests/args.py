@@ -116,31 +116,31 @@ class TestArgumentParsing(unittest.TestCase):
     # -r
     def test_one_restart(self):
         args = parse_args(self.config, ["-h", "a", "-r", "all"])
-        self.assertEqual(args.commands, [["restart", "all"]])
+        self.assertEqual(cmdline(args.commands), [["restart", "all"]])
 
     def test_multi_restart(self):
         args = parse_args(self.config, ["-h", "a", "-r", "all", "-r", "more"])
         self.assertEqual(
-            args.commands, [["restart", "all"], ["restart", "more"]])
+            cmdline(args.commands), [["restart", "all"], ["restart", "more"]])
 
     # -c
     def test_no_commands(self):
         args = parse_args(self.config, ["-h", "a"])
-        self.assertEqual(args.commands, [])
+        self.assertEqual(cmdline(args.commands), [])
 
     def test_simple_command(self):
         args = parse_args(self.config, ["-h", "a", "-c", "test"])
-        self.assertEqual(args.commands, [["test"]])
+        self.assertEqual(cmdline(args.commands), [["test"]])
 
     def test_command_with_args(self):
         args = parse_args(self.config, ["-h", "a", "-c", "test", "args"])
-        self.assertEqual(args.commands, [["test", "args"]])
+        self.assertEqual(cmdline(args.commands), [["test", "args"]])
 
     # mixup
     def test_commands_together(self):
         args = parse_args(
             self.config, ["-h", "a", "-c", "test", "args", "-r", "all"])
-        self.assertEqual(args.commands, [["test", "args"], ["restart", "all"]])
+        self.assertEqual(cmdline(args.commands), [["test", "args"], ["restart", "all"]])
 
 
 class TestProfileArguments(unittest.TestCase):
@@ -170,7 +170,7 @@ class TestProfileArguments(unittest.TestCase):
         full_args = parse_args(self.config, args)
 
         self.assertEqual(profile_info.profile, "foo")
-        self.assertEqual(full_args.commands, [["test"]])
+        self.assertEqual(cmdline(full_args.commands), [["test"]])
 
     def test_invalid_profile(self):
         args = ["bad", "-h", "a"]
@@ -287,3 +287,8 @@ class TestArgumentReconstruction(unittest.TestCase):
         canonical = construct_canonical_commandline(self.config, args)
         self.assertEqual(
             "-h host --parallel=5 --timeout=60 --verbose", canonical)
+
+
+# Helper
+def cmdline(cmds):
+    return [cmd.cmdline() for cmd in cmds]

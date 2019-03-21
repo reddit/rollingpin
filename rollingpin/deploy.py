@@ -11,8 +11,16 @@ from twisted.internet.defer import (
     returnValue,
 )
 
+from .commands import (
+    Command,
+    BuildCommand,
+    DeployCommand,
+    RestartCommand,
+    SynchronizeCommand,
+    WaitUntilComponentsReadyCommand,
+)
 from .hostsources import Host
-from .transports import TransportError, ExecutionTimeout
+from .transports import TransportError
 from .utils import sleep
 
 
@@ -88,12 +96,21 @@ class Deployer(object):
         try:
             log.info("connecting")
             connection = yield self.transport.connect_to(host.address)
-            for command in commands:
-                log.info(" ".join(command))
+            command_queue = commands[:]
+            while command_queue:
+                command = command_queue.pop(0)
+                log.info(" ".join(command.cmdline()))
                 yield self.event_bus.trigger(
-                    "host.command", host=host, command=command)
-                result = yield connection.execute(log, command, timeout)
-                results.append(DeployResult(command, result))
+                    "host.command", host=host, command=command.name)
+                result = yield connection.execute(log, command.cmdline(), timeout)
+
+                results.append(DeployResult(command.name, result))
+
+                control = command.check_result(result)
+                if control == Command.SKIP_REMAINING:
+                    log.info("{} reported no changes, skipping remaining not explicitly defined steps.".format(command.name))
+                    command_queue = [cmd for cmd in command_queue if cmd.explicit]
+
             yield connection.disconnect()
         except TransportError as e:
             should_be_alive = yield self.host_source.should_be_alive(host)
@@ -148,7 +165,7 @@ class Deployer(object):
                     # synchronize the code host with upstreams
                     # this will return a build token and build host for each
                     # component
-                    sync_command = ["synchronize"] + components
+                    sync_command = SynchronizeCommand(components)
                     code_host = Host.from_hostname(self.code_host)
                     (sync_result,) = yield self.process_host(
                         code_host, [sync_command])
@@ -157,7 +174,7 @@ class Deployer(object):
 
                     # this is where we build up the final deploy command
                     # resulting from all our syncing and building
-                    deploy_command = ["deploy"]
+                    deploy_command = DeployCommand()
 
                     # collect the results of the sync per-buildhost
                     by_buildhost = collections.defaultdict(list)
@@ -170,12 +187,12 @@ class Deployer(object):
                         else:
                             # no build host means we just pass the sync token
                             # straight through as a deploy token
-                            deploy_command.append(component_ref)
+                            deploy_command.add_argument(component_ref)
 
                     # ask each build host to build our components and return
                     # a deploy token
                     for build_hostname, build_refs in by_buildhost.iteritems():
-                        build_command = ["build"] + build_refs
+                        build_command = BuildCommand(build_refs)
                         build_host = Host.from_hostname(build_hostname)
                         (build_result,) = yield self.process_host(
                             build_host, [build_command])
@@ -188,15 +205,15 @@ class Deployer(object):
                                               build_result.result[ref])
                             except KeyError:
                                 raise ComponentNotBuiltError(component)
-                            deploy_command.append(deploy_ref)
+                            deploy_command.add_argument(deploy_ref)
 
                     # Wait until components report ready IF:
                     # * we are actually restarting a component
                     # * we aren't going --dangerously-fast
                     restarting_component = any(
-                        ["restart" in val for val in commands])
+                        [isinstance(val, RestartCommand) for val in commands])
                     if restarting_component and not self.dangerously_fast:
-                        commands.append(["wait-until-components-ready"])
+                        commands.append(WaitUntilComponentsReadyCommand())
                 except Exception:
                     traceback.print_exc()
                     raise DeployError("unexpected error in sync/build")
