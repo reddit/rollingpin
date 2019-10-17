@@ -13,10 +13,10 @@ class BufferedTestCommand(test):
 
 setup(
     name="rollingpin",
-    version="1.0",
+    version="1.1",
     packages=find_packages(exclude=["tests"]),
     install_requires=[
-        "Twisted>=13.1",
+        "Twisted>=17.5",
     ],
     extras_require={
         "autoscaler": [
