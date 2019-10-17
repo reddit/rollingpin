@@ -64,8 +64,7 @@ class _ClientAuthService(SSHUserAuthClient):
             return succeed(public_key)
 
     def getPrivateKey(self):
-        key = self.factory.key.keyObject
-        return succeed(key)
+        return succeed(self.factory.key)
 
 
 class _ClientTransport(SSHClientTransport):
