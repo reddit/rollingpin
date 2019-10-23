@@ -83,6 +83,8 @@ class _ClientTransport(SSHClientTransport):
             error = ConnectError("unable to make a secure connection")
         elif self.factory.state == "AUTHENTICATING":
             error = ConnectError("unable to authenticate")
+        elif self.factory.state == "CONNECTING":
+            error = ConnectError("unable to connect")
         elif self.factory.state == "CONNECTED":
             return
         self.factory.connection_ready.errback(error)
@@ -135,6 +137,7 @@ class SshTransport(Transport):
     @inlineCallbacks
     def connect_to(self, host):
         factory = _ConnectionFactory(self.config, self.key)
+        factory.state = "CONNECTING"
 
         port = self.config["transport"]["port"]
         timeout = self.config["transport"]["timeout"]
