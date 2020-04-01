@@ -66,7 +66,7 @@ class TestWavefrontNotifier(unittest.TestCase):
             },
             'endTime': 1000,
             'name': 'example-profile Deploy',
-            'tags': ['example-profile.deploy', 'example-profile.deploy.aborted'],
+            'tags': ['example-profile.deploy', 'deploy', 'example-profile.deploy.aborted'],
         }
         self.assertEquals(deploy_abort_event, expected_deploy_abort_event)
 
@@ -80,6 +80,6 @@ class TestWavefrontNotifier(unittest.TestCase):
             },
             'endTime': 1000,
             'name': 'example-profile Deploy',
-            'tags': ['example-profile.deploy']
+            'tags': ['example-profile.deploy', 'deploy']
         }
         self.assertEquals(deploy_end_event, expected_deploy_end_event)
