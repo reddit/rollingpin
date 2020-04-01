@@ -33,6 +33,7 @@ class WavefrontNotifier(object):
             },
             "tags" : [
                 "%s.deploy" % self.profile,
+                "deploy",
             ],
         }
 
