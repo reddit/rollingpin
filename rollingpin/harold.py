@@ -13,6 +13,8 @@ from twisted.web.http_headers import Headers
 
 from .utils import swallow_exceptions
 
+TIMEOUT_SECONDS = 5
+
 
 class FormEncodedBodyProducer(object):
 
@@ -42,8 +44,9 @@ class HaroldWhisperer(object):
         self.base_url = config["harold"]["base-url"]
         self.secret = config["harold"]["hmac-secret"]
 
+        self.log = logging.getLogger(__name__)
         self.connection_pool = HTTPConnectionPool(reactor)
-        self.agent = Agent(reactor, pool=self.connection_pool)
+        self.agent = Agent(reactor, connectTimeout=TIMEOUT_SECONDS, pool=self.connection_pool)
 
     def make_request(self, path, data):
         base_url = urlparse.urlparse(self.base_url)
@@ -63,7 +66,13 @@ class HaroldWhisperer(object):
             "Content-Type": ["application/x-www-form-urlencoded"],
             "X-Hub-Signature": ["sha1=" + body_producer.hash(self.secret)],
         })
-        return self.agent.request("POST", url, headers, body_producer)
+        req = self.agent.request("POST", url, headers, body_producer)
+
+        def log_timeout(d, timeout):
+            self.log.warning("harold: request timed out after %d seconds (/%s)", timeout, path)
+
+        req.addTimeout(TIMEOUT_SECONDS, reactor, onTimeoutCancel=log_timeout)
+        return req
 
 
 class HaroldNotifier(object):
