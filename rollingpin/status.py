@@ -64,20 +64,14 @@ def fetch_deploy_status(config):
 
     fetch_req = _do_status_http_request(harold_base_url, harold_secret, salon)
 
-    # give the request a few seconds and bail out if it takes too long
-    timeout = reactor.callLater(TIMEOUT_SECONDS, fetch_req.cancel)
+    def log_timeout(d, timeout):
+        logging.warning("failed to fetch deploy status: timed out")
+        return SAFE_DEFAULT
 
-    def cancel_timeout(passthrough):
-        if timeout.active():
-            timeout.cancel()
-        return passthrough
-    fetch_req.addBoth(cancel_timeout)
+    fetch_req.addTimeout(TIMEOUT_SECONDS, reactor, onTimeoutCancel=log_timeout)
 
     try:
         result = yield fetch_req
-    except CancelledError:
-        logging.warning("failed to fetch deploy status: timed out")
-        returnValue(SAFE_DEFAULT)
     except Exception as exc:
         logging.warning("failed to fetch deploy status: %s", exc)
         returnValue(SAFE_DEFAULT)

@@ -44,6 +44,7 @@ class HaroldWhisperer(object):
         self.base_url = config["harold"]["base-url"]
         self.secret = config["harold"]["hmac-secret"]
 
+        self.log = logging.getLogger(__name__)
         self.connection_pool = HTTPConnectionPool(reactor)
         self.agent = Agent(reactor, connectTimeout=TIMEOUT_SECONDS, pool=self.connection_pool)
 
@@ -67,13 +68,10 @@ class HaroldWhisperer(object):
         })
         req = self.agent.request("POST", url, headers, body_producer)
 
-        timeout = reactor.callLater(TIMEOUT_SECONDS, req.cancel())
+        def log_timeout(d, timeout):
+            self.log.warning("harold: request timed out after %d seconds (/%s)", timeout, path)
 
-        def cancel_timeout(n):
-            if timeout.active():
-                timeout.cancel()
-            return n
-        req.addBoth(cancel_timeout)
+        req.addTimeout(TIMEOUT_SECONDS, reactor, onTimeoutCancel=log_timeout)
         return req
 
 
