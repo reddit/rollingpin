@@ -14,6 +14,7 @@ from twisted.internet.defer import (
 from .commands import (
     Command,
     BuildCommand,
+    BuildCompleteCommand,
     DeployCommand,
     RestartCommand,
     SynchronizeCommand,
@@ -191,21 +192,29 @@ class Deployer(object):
 
                     # ask each build host to build our components and return
                     # a deploy token
-                    for build_hostname, build_refs in by_buildhost.iteritems():
-                        build_command = BuildCommand(build_refs)
-                        build_host = Host.from_hostname(build_hostname)
-                        (build_result,) = yield self.process_host(
-                            build_host, [build_command])
+                    if by_buildhost:
+                        build_complete_command = BuildCompleteCommand()
+                        for build_hostname, build_refs in by_buildhost.iteritems():
+                            build_command = BuildCommand(build_refs)
+                            build_host = Host.from_hostname(build_hostname)
+                            (build_result,) = yield self.process_host(
+                                build_host, [build_command])
 
-                        for ref in build_refs:
-                            component, at, sync_token = ref.partition("@")
-                            assert at == "@"
-                            try:
-                                deploy_ref = (component + "@" +
-                                              build_result.result[ref])
-                            except KeyError:
-                                raise ComponentNotBuiltError(component)
-                            deploy_command.add_argument(deploy_ref)
+                            for ref in build_refs:
+                                component, at, sync_token = ref.partition("@")
+                                assert at == "@"
+                                try:
+                                    deploy_ref = (component + "@" +
+                                                  build_result.result[ref])
+                                except KeyError:
+                                    raise ComponentNotBuiltError(component)
+
+                                build_complete_command.add_argument(deploy_ref)
+                                deploy_command.add_argument(deploy_ref)
+
+                        yield self.process_host(
+                            code_host, [build_complete_command]
+                        )
 
                     # Wait until components report ready IF:
                     # * we are actually restarting a component

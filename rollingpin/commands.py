@@ -50,6 +50,10 @@ class BuildCommand(Command):
     name = "build"
 
 
+class BuildCompleteCommand(Command):
+    name = "build-complete"
+
+
 class RestartCommand(Command):
     name = "restart"
 
