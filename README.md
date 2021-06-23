@@ -1,7 +1,10 @@
 The Rolling Pin
 ===============
 
-<img src="https://upload.wikimedia.org/wikipedia/commons/1/19/Work_dough.jpg" width="280" height="210" align="right" alt="">
+<img type="image/jpeg" width="280" height="210" align="right"
+  src="https://upload.wikimedia.org/wikipedia/commons/1/19/Work_dough.jpg"
+  alt="Work dough"
+/>
 
 A tool for rolling changes out to servers.
 
@@ -40,7 +43,7 @@ Setup
 To install:
 
 ```
-https://github.com/reddit/rollingpin.git
+git clone https://github.com/reddit/rollingpin.git
 python setup.py install
 ```
 
@@ -113,7 +116,7 @@ rollingpin$ python setup.py test
 
 You can also run the test and lint suites in a Docker container:
 
-```bash
+```sh
 docker build . -t rollingpin:test && docker run --rm rollingpin:test
 ```
 
