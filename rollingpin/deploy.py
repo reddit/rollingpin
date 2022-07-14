@@ -39,7 +39,6 @@ class DeployError(Exception):
 
 
 class HostDeployError(DeployError):
-
     def __init__(self, host, error):
         self.host = host
         self.error = error
@@ -50,7 +49,6 @@ class HostDeployError(DeployError):
 
 
 class ComponentNotBuiltError(DeployError):
-
     def __init__(self, component):
         self.component = component
         super(ComponentNotBuiltError, self).__init__()
@@ -59,13 +57,13 @@ class ComponentNotBuiltError(DeployError):
         return "{}: build token not generated".format(self.component)
 
 
-DeployResult = collections.namedtuple('DeployResult', ['command', 'result'])
+DeployResult = collections.namedtuple("DeployResult", ["command", "result"])
 
 
 class Deployer(object):
-
-    def __init__(self, config, event_bus, parallel,
-                 sleeptime, timeout, dangerously_fast):
+    def __init__(
+        self, config, event_bus, parallel, sleeptime, timeout, dangerously_fast
+    ):
         """
         :param dict config:
         :param EventBus event_bus:
@@ -101,14 +99,19 @@ class Deployer(object):
                 command = command_queue.pop(0)
                 log.info(" ".join(command.cmdline()))
                 yield self.event_bus.trigger(
-                    "host.command", host=host, command=command.name)
+                    "host.command", host=host, command=command.name
+                )
                 result = yield connection.execute(log, command.cmdline(), timeout)
 
                 results.append(DeployResult(command.name, result))
 
                 control = command.check_result(result)
                 if control == Command.SKIP_REMAINING:
-                    log.info("{} reported no changes, skipping remaining not explicitly defined steps.".format(command.name))
+                    log.info(
+                        "{} reported no changes, skipping remaining not explicitly defined steps.".format(
+                            command.name
+                        )
+                    )
                     command_queue = [cmd for cmd in command_queue if cmd.explicit]
 
             yield connection.disconnect()
@@ -120,13 +123,12 @@ class Deployer(object):
                 log.warning("error on possibly terminated host: %s", e)
 
             yield self.event_bus.trigger(
-                "host.abort", host=host, error=e,
-                should_be_alive=should_be_alive)
+                "host.abort", host=host, error=e, should_be_alive=should_be_alive
+            )
             raise HostDeployError(host, e)
         else:
             log.info("success! all done")
-            yield self.event_bus.trigger(
-                "host.end", host=host, results=results)
+            yield self.event_bus.trigger("host.end", host=host, results=results)
 
         returnValue(results)
 
@@ -152,6 +154,7 @@ class Deployer(object):
         def signal_handler(sig, _):
             reason = SIGNAL_MESSAGES[sig]
             reactor.callFromThread(self.abort, reason)
+
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGHUP, signal_handler)
 
@@ -167,10 +170,10 @@ class Deployer(object):
                     # component
                     sync_command = SynchronizeCommand(components)
                     code_host = Host.from_hostname(self.code_host)
-                    (sync_result,) = yield self.process_host(
-                        code_host, [sync_command])
-                    yield self.event_bus.trigger("build.sync",
-                                                 sync_info=sync_result.result)
+                    (sync_result,) = yield self.process_host(code_host, [sync_command])
+                    yield self.event_bus.trigger(
+                        "build.sync", sync_info=sync_result.result
+                    )
 
                     # this is where we build up the final deploy command
                     # resulting from all our syncing and building
@@ -195,14 +198,14 @@ class Deployer(object):
                         build_command = BuildCommand(build_refs)
                         build_host = Host.from_hostname(build_hostname)
                         (build_result,) = yield self.process_host(
-                            build_host, [build_command])
+                            build_host, [build_command]
+                        )
 
                         for ref in build_refs:
                             component, at, sync_token = ref.partition("@")
                             assert at == "@"
                             try:
-                                deploy_ref = (component + "@" +
-                                              build_result.result[ref])
+                                deploy_ref = component + "@" + build_result.result[ref]
                             except KeyError:
                                 raise ComponentNotBuiltError(component)
                             deploy_command.add_argument(deploy_ref)
@@ -211,7 +214,8 @@ class Deployer(object):
                     # * we are actually restarting a component
                     # * we aren't going --dangerously-fast
                     restarting_component = any(
-                        [isinstance(val, RestartCommand) for val in commands])
+                        [isinstance(val, RestartCommand) for val in commands]
+                    )
                     if restarting_component and not self.dangerously_fast:
                         commands.append(WaitUntilComponentsReadyCommand())
                 except Exception:
@@ -230,20 +234,20 @@ class Deployer(object):
             for host in hosts:
                 if not first_host:
                     for i in xrange(self.sleeptime, 0, -1):
-                        yield self.event_bus.trigger(
-                            "deploy.sleep", host=host, count=i)
+                        yield self.event_bus.trigger("deploy.sleep", host=host, count=i)
                         yield sleep(1)
                 else:
                     first_host = False
 
                 deferred = parallelism_limiter.run(
-                    self.process_host, host, commands,
-                    timeout=self.execution_timeout)
+                    self.process_host, host, commands, timeout=self.execution_timeout
+                )
                 deferred.addErrback(self.on_host_error)
                 host_deploys.append(deferred)
 
                 yield self.event_bus.trigger(
-                    "deploy.enqueue", host=host, deferred=deferred)
+                    "deploy.enqueue", host=host, deferred=deferred
+                )
             yield DeferredList(host_deploys)
         except (DeployError, AbortDeploy, TransportError) as e:
             yield self.abort(str(e))

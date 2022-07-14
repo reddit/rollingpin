@@ -59,7 +59,6 @@ class WaitUntilComponentsReadyCommand(Command):
 
 
 class GenericCommand(Command):
-
     def __init__(self, name, args=None):
         self.name = name
         # Generic commands can only be added explicitly from the commandline.

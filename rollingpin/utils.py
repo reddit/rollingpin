@@ -82,16 +82,16 @@ def interleaved(items, key):
 
 
 # https://stackoverflow.com/a/1181922
-def b36encode(number, alphabet='0123456789abcdefghijklmnopqrstuvwxyz'):
+def b36encode(number, alphabet="0123456789abcdefghijklmnopqrstuvwxyz"):
     """Convert an integer to a base36 string."""
     if not isinstance(number, (int, long)):
-        raise TypeError('number must be an integer')
+        raise TypeError("number must be an integer")
 
-    base36 = ''
-    sign = ''
+    base36 = ""
+    sign = ""
 
     if number < 0:
-        sign = '-'
+        sign = "-"
         number = -number
 
     if 0 <= number < len(alphabet):

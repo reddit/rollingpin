@@ -60,7 +60,8 @@ class AutoscalerHostSource(HostSource):
 
             if self.user:
                 yield self.client.add_auth(
-                    "digest", "%s:%s" % (self.user, self.password))
+                    "digest", "%s:%s" % (self.user, self.password)
+                )
 
             hostnames = yield self.client.get_children("/server")
             hosts = yield parallel_map(hostnames, self._get_host_info)
@@ -87,8 +88,6 @@ class AutoscalerHostSource(HostSource):
         except zookeeper.ZooKeeperException as e:
             # fail safe
             logging.warning(
-                "autoscaler: failed to check liveliness for %r: %s",
-                host.name,
-                e
+                "autoscaler: failed to check liveliness for %r: %s", host.name, e
             )
             returnValue(True)

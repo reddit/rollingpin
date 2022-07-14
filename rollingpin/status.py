@@ -29,24 +29,28 @@ SAFE_DEFAULT = {
 def _do_status_http_request(harold_base_url, harold_secret, salon):
     base_url = urlparse.urlparse(harold_base_url)
     path = posixpath.join(base_url.path, "harold/deploy/status")
-    url = urlparse.urlunparse((
-        base_url.scheme,
-        base_url.netloc,
-        path,
-        None,
-        urllib.urlencode({"salon": salon}),
-        None
-    ))
+    url = urlparse.urlunparse(
+        (
+            base_url.scheme,
+            base_url.netloc,
+            path,
+            None,
+            urllib.urlencode({"salon": salon}),
+            None,
+        )
+    )
 
     now = str(int(time.time()))
     signature = hmac.new(harold_secret, now, hashlib.sha256).hexdigest()
     signature_header = "%s:%s" % (now, signature)
 
     agent = Agent(reactor)
-    headers = Headers({
-        "User-Agent": ["rollingpin"],
-        "X-Signature": [signature_header],
-    })
+    headers = Headers(
+        {
+            "User-Agent": ["rollingpin"],
+            "X-Signature": [signature_header],
+        }
+    )
     response = yield agent.request("GET", url, headers)
     if response.code != 200:
         raise Exception("harold responded with an error: %d" % response.code)

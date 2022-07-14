@@ -63,7 +63,8 @@ class HippoHostSource(HostSource):
 
             if self.user:
                 yield self.client.add_auth(
-                    "digest", "%s:%s" % (self.user, self.password))
+                    "digest", "%s:%s" % (self.user, self.password)
+                )
 
             instance_ids = yield self.client.get_children("/hosts")
             hosts = yield parallel_map(instance_ids, self._get_host_info)
@@ -84,5 +85,6 @@ class HippoHostSource(HostSource):
         except zookeeper.ZooKeeperException as e:
             # fail safe
             logging.warning(
-                "hippo: failed to check liveliness for %r: %s", host.name, e)
+                "hippo: failed to check liveliness for %r: %s", host.name, e
+            )
             returnValue(True)
