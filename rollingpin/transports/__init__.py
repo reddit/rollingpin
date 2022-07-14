@@ -7,7 +7,6 @@ class ConnectionError(TransportError):
 
 
 class ExecutionTimeout(TransportError):
-
     def __init__(self, command):
         self.command = command
         super(ExecutionTimeout, self).__init__()

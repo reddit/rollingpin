@@ -51,12 +51,9 @@ class MockTransportConnection(TransportConnection):
 
     def _synchronize(self, log, command, args):
         log.debug("MOCK: git fetch")
-        return succeed({
-            "test-component": {
-                "token": "build-token",
-                "buildhost": "build-01"
-            }
-        })
+        return succeed(
+            {"test-component": {"token": "build-token", "buildhost": "build-01"}}
+        )
 
     def _build(self, log, command, args):
         result = dict()
@@ -69,7 +66,7 @@ class MockTransportConnection(TransportConnection):
         for arg in args:
             (component, build_token) = arg.split("@")
             log.debug("MOCK: [{}] git fetch origin".format(component))
-            if random.random() < .2:
+            if random.random() < 0.2:
                 raise CommandFailed("remote command exited with status 127")
             log.debug("MOCK: [{}] git checkout {}".format(component, build_token))
             return succeed({})

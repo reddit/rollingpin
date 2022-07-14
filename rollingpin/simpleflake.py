@@ -37,8 +37,7 @@ SIMPLEFLAKE_RANDOM_LENGTH = 23
 SIMPLEFLAKE_RANDOM_SHIFT = 0
 SIMPLEFLAKE_TIMESTAMP_SHIFT = 23
 
-simpleflake_struct = collections.namedtuple("SimpleFlake",
-                                            ["timestamp", "random_bits"])
+simpleflake_struct = collections.namedtuple("SimpleFlake", ["timestamp", "random_bits"])
 
 # ===================== Utility ====================
 
@@ -58,7 +57,8 @@ def binary(num, padding=True):
 def extract_bits(data, shift, length):
     """Extract a portion of a bit string. Similar to substr()."""
     bitmask = ((1 << length) - 1) << shift
-    return ((data & bitmask) >> shift)
+    return (data & bitmask) >> shift
+
 
 # ==================================================
 
@@ -79,11 +79,10 @@ def simpleflake(timestamp=None, random_bits=None, epoch=SIMPLEFLAKE_EPOCH):
 
 def parse_simpleflake(flake):
     """Parses a simpleflake and returns a named tuple with the parts."""
-    timestamp = SIMPLEFLAKE_EPOCH\
-        + extract_bits(flake,
-                       SIMPLEFLAKE_TIMESTAMP_SHIFT,
-                       SIMPLEFLAKE_TIMESTAMP_LENGTH) / 1000.0
-    random = extract_bits(flake,
-                          SIMPLEFLAKE_RANDOM_SHIFT,
-                          SIMPLEFLAKE_RANDOM_LENGTH)
+    timestamp = (
+        SIMPLEFLAKE_EPOCH
+        + extract_bits(flake, SIMPLEFLAKE_TIMESTAMP_SHIFT, SIMPLEFLAKE_TIMESTAMP_LENGTH)
+        / 1000.0
+    )
+    random = extract_bits(flake, SIMPLEFLAKE_RANDOM_SHIFT, SIMPLEFLAKE_RANDOM_LENGTH)
     return simpleflake_struct(timestamp, random)

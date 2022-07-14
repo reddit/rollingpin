@@ -6,34 +6,30 @@ NO_DEFAULT = object()
 
 
 class Option(object):
-
     def __init__(self, coercer, default=NO_DEFAULT):
         self.coercer = coercer
         self.default = default
 
 
 class OptionalSection(dict):
-
     def __init__(self, options):
         dict.__init__(self, options)
 
 
 class ConfigurationError(Exception):
-
     def __init__(self, errors):
         self.errors = errors
         super(ConfigurationError, self).__init__()
 
 
 class NoDefaultInOptionalSection(Exception):
-
     def __init__(self):
         Exception.__init__(
-            self, "all options in an optional section must have defaults")
+            self, "all options in an optional section must have defaults"
+        )
 
 
 class MissingSectionError(object):
-
     def __init__(self, section):
         self.section = section
 
@@ -42,7 +38,6 @@ class MissingSectionError(object):
 
 
 class MissingItemError(object):
-
     def __init__(self, section, key):
         self.section = section
         self.key = key
@@ -52,15 +47,13 @@ class MissingItemError(object):
 
 
 class CoercionError(object):
-
     def __init__(self, section, key, error):
         self.section = section
         self.key = key
         self.error = error
 
     def __str__(self):
-        return "[%s]: %s: %s" % (
-            self.section, self.key, self.error)
+        return "[%s]: %s: %s" % (self.section, self.key, self.error)
 
 
 def coerce_and_validate_config(parser, spec):

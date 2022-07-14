@@ -143,15 +143,15 @@ class SshTransport(Transport):
         timeout = self.config["transport"]["timeout"]
 
         try:
-            connector = reactor.connectTCP(
-                host, port, factory, timeout=timeout)
+            connector = reactor.connectTCP(host, port, factory, timeout=timeout)
             connection = yield factory.connection_ready
         except (ConnectError, DNSLookupError) as e:
             raise ConnectionError(str(e))
 
         command_binary = self.config["transport"]["command"]
         transport_connection = SshTransportConnection(
-            command_binary, connector, connection)
+            command_binary, connector, connection
+        )
         returnValue(transport_connection)
 
 
@@ -259,8 +259,7 @@ class SshTransportConnection(TransportConnection):
         args = " ".join(pipes.quote(part) for part in command)
         command = "sudo %s %s" % (self.command_binary, args)
 
-        channel = _CommandChannel(
-            log, command, conn=self.connection, timeout=timeout)
+        channel = _CommandChannel(log, command, conn=self.connection, timeout=timeout)
         self.connection.openChannel(channel)
         result = yield channel.finished
         returnValue(result)
