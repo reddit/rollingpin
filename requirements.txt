@@ -1,5 +1,5 @@
 Automat==0.6.0
-Twisted==17.5.0
+Twisted==22.10.0
 ZooKeeper==0.4
 argparse==1.2.1
 asn1crypto==1.0.1
