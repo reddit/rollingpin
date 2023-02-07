@@ -6,7 +6,7 @@ asn1crypto==1.0.1
 attrs==19.1.0
 cffi==1.10.0
 constantly==15.1.0
-cryptography==2.3
+cryptography==39.0.1
 enum34==1.1.6
 hyperlink==18.0.0
 idna==2.8
